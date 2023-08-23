@@ -1,0 +1,32 @@
+
+
+
+# Installation toolchain
+setuptools~=68.1
+
+# Copyright linting toolchain
+reuse~=2.1
+
+# Documentation toolchain
+pydeps~=1.12.1
+myst-parser~=2.0.0
+sphinx~=7.2.2
+m2r2~=0.3.3.post2
+
+# Python Linting toolchain
+black>=23.1.0
+flake8>=6.0.0
+pylint>=2.16.0
+pytest-github-actions-annotate-failures>=0.1.7
+pydocstyle>=6.3.0
+isort>=5.12.0
+
+# Security Analysis toolchain
+bandit~=1.7.5
+
+# Type checking toolchain
+mypy>=0.991
+types-PyYAML~=6.0
+
+# Terminal colouring and formatting
+clint>=0.5.1

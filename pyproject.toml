@@ -1,0 +1,50 @@
+# Python project info
+
+# SPDX-FileCopyrightText: 2021 - 2023 Mewbot Developers <mewbot@quicksilver.london>
+#
+# SPDX-License-Identifier: CC0-1.0
+
+[tool.black]
+
+line-length = 94
+
+[tool.pylint."MASTER"]
+
+persistent = "yes"
+unsafe-load-any-extension = "no"
+
+jobs=1
+
+[tool.pydocstyle]
+
+convention="pep257"
+add-ignore=["D200", "D202", "D401"]
+add-select=["D204", "D213", "D416", "D417"]
+ignore-self-only-init=true
+
+[tool.pylint."MESSAGES CONTROL"]
+
+disable=[]
+
+[tool.coverage.run]
+
+branch=true
+relative_files=true
+source=["src"]
+dynamic_context = "test_function"
+
+[tool.coverage.report]
+
+fail_under=40.0
+
+[tool.coverage.html]
+
+show_contexts=true
+
+[tool.isort]
+profile = "black"
+py_version=310
+sections = ['FUTURE', 'TYPING', 'STDLIB', 'THIRDPARTY', 'FIRSTPARTY', 'LOCALFOLDER']
+known_typing = ["typing", "types", "collections.abc"]
+# 9 is black compatible, bu does not look great
+multi_line_output = 3
