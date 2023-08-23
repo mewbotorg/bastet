@@ -20,6 +20,7 @@ class ReuseToolchain(ToolChain):
     """
     Represents a run of the reuse program.
     """
+
     copyright: str
     license: str
 
