@@ -1,4 +1,6 @@
-
+# SPDX-FileCopyrightText: 2023 Mewbot Developers <mewbot@quicksilver.london>
+#
+# SPDX-License-Identifier: BSD-2-Clause
 
 import codecs
 import os
@@ -101,7 +103,8 @@ setuptools.setup(
     package_dir={"": "src"},
     packages=setuptools.find_namespace_packages(where="src", include=["mewbot.*"]),
     # see https://packaging.python.org/en/latest/specifications/entry-points/
-    entry_points={"console_scripts": ['mewbot-lint=mewbot_dev_tools.console_scripts.mewbot_lint:main']},
+    entry_points={"console_scripts": ['mewbot-lint=mewbot_dev_tools.console_scripts.mewbot_lint:main',
+                                      'mewbot-reuse=mewbot_dev_tools.console_scripts.mewbot_reuse:main']},
     python_requires=">=3.10",  # Might be relaxed later
 )
 

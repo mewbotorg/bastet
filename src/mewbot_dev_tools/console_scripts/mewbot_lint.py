@@ -1,6 +1,11 @@
+# SPDX-FileCopyrightText: 2023 Mewbot Developers <mewbot@quicksilver.london>
+#
+# SPDX-License-Identifier: BSD-2-Clause
+
 """
 Provides support for the linting toolchain.
 """
+
 import os
 
 from ..lint import LintToolchain, parse_lint_options

@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2023 Mewbot Developers <mewbot@quicksilver.london>
+
+SPDX-License-Identifier: BSD-2-Clause
+-->
+
 # mewbot-dev-tools
 
 Tools to aid with mewbot development.

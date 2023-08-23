@@ -8,12 +8,11 @@ Uses the reuse tool to ensure copyright info is present in all files.
 
 from __future__ import annotations
 
+from typing import Any
+
 import os
 
 from .toolchain import Annotation, ToolChain
-
-COPYRIGHT: str = "Mewbot Developers <mewbot@quicksilver.london>"
-LICENSE: str = "BSD-2-Clause"
 
 
 # Presented as a class to make accessing some properties of the run easier.
@@ -21,6 +20,20 @@ class ReuseToolchain(ToolChain):
     """
     Represents a run of the reuse program.
     """
+    copyright: str
+    license: str
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        """
+        Need an __init__ to allow use to modify the constants on a class level.
+
+        :param args:
+        :param kwargs:
+        """
+        super().__init__(*args, **kwargs)
+
+        self.copyright = "Mewbot Developers <mewbot@quicksilver.london>"
+        self.license = "BSD-2-Clause"
 
     def run(self) -> list[Annotation]:
         """Execute reuse and return the status of the run."""
@@ -29,9 +42,9 @@ class ReuseToolchain(ToolChain):
             "annotate",
             "--merge-copyrights",
             "--copyright",
-            COPYRIGHT,
+            self.copyright,
             "--license",
-            LICENSE,
+            self.license,
             "--skip-unrecognised",
             "--skip-existing",
             "--recursive",
