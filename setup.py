@@ -18,7 +18,7 @@ def read(rel_path):
     :return:
     """
     here = os.path.abspath(os.path.dirname(__file__))
-    with codecs.open(os.path.join(here, rel_path), 'r') as fp:
+    with codecs.open(os.path.join(here, rel_path), "r") as fp:
         return fp.read()
 
 
@@ -30,7 +30,7 @@ def get_version(rel_path):
     :return:
     """
     for line in read(rel_path).splitlines():
-        if line.startswith('__version__'):
+        if line.startswith("__version__"):
             delim = '"' if '"' in line else "'"
             return line.split(delim)[1]
     else:
@@ -59,14 +59,12 @@ cand_full_license_path = Path(license_text.strip())
 
 # We have a symlink to the license - read it
 if cand_full_license_path.exists():
-
     true_license_ident = os.path.splitext(license_text.split(r"/")[-1])[0]
 
     with cand_full_license_path.open("r", encoding="utf-8") as true_license_file:
         true_license_text = true_license_file.read()
 
 else:
-
     raise NotImplementedError(
         f"Cannot programmatically determine license_ident from license. "
         f"Link '{license_text}' may be invalid. "
@@ -103,8 +101,15 @@ setuptools.setup(
     package_dir={"": "src"},
     packages=setuptools.find_namespace_packages(where="src", include=["mewbot.*"]),
     # see https://packaging.python.org/en/latest/specifications/entry-points/
-    entry_points={"console_scripts": ['mewbot-lint=mewbot_dev_tools.console_scripts.mewbot_lint:main',
-                                      'mewbot-reuse=mewbot_dev_tools.console_scripts.mewbot_reuse:main']},
+    entry_points={
+        "console_scripts": [
+            "mewbot-lint=mewbot_dev_tools.console_scripts.mewbot_lint:main",
+            "mewbot-reuse=mewbot_dev_tools.console_scripts.mewbot_reuse:main",
+            "mewbot-test=mewbot_dev_tools.console_scripts.mewbot_test:main",
+            "mewbot-security-analysis="
+            "mewbot_dev_tools.console_scripts.mewbot_security_analysis:main",
+            "mewbot-preflight=mewbot_dev_tools.console_scripts.mewbot_preflight:main",
+        ]
+    },
     python_requires=">=3.10",  # Might be relaxed later
 )
-

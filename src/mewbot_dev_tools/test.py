@@ -15,6 +15,7 @@ By default, all test declared to be part of mewbot test suite (either core or pl
 from __future__ import annotations
 
 from collections.abc import Iterable
+from typing import Optional
 
 import argparse
 import os
@@ -118,9 +119,14 @@ def parse_test_options() -> argparse.Namespace:
     return parser.parse_args()
 
 
-if __name__ == "__main__":
+def main(search_root: Optional[str] = None) -> None:
+    """
+    Collect and run the tests.
+
+    :return:
+    """
     options = parse_test_options()
-    paths = options.path or list(gather_paths("tests"))
+    paths = options.path or list(gather_paths("tests", search_root=search_root))
 
     testing = TestToolchain(*paths, in_ci=options.in_ci)
 
@@ -129,3 +135,7 @@ if __name__ == "__main__":
     testing.covering = options.covering or list(gather_paths("src"))
 
     testing()
+
+
+if __name__ == "__main__":
+    main()

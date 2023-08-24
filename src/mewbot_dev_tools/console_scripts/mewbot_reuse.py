@@ -14,7 +14,7 @@ import os
 from ..reuse import ReuseToolchain
 
 
-def load_copyright_file() -> Optional[tuple[Optional[str], Optional[str]]]:
+def load_copyright_file() -> tuple[Optional[str], Optional[str]]:
     """
     Attempts to load a copyright.json standard from the cwd.
 
@@ -22,7 +22,7 @@ def load_copyright_file() -> Optional[tuple[Optional[str], Optional[str]]]:
     :return:
     """
     if not os.path.exists("copyright.json"):
-        return None
+        return None, None
 
     with open("copyright.json", encoding="utf-8") as json_infile:
         copyright_info = json.load(json_infile)

@@ -8,7 +8,7 @@ Support classes for running a series of tools across the codebase.
 
 from __future__ import annotations
 
-from typing import IO, BinaryIO, Iterable
+from typing import IO, BinaryIO, Iterable, Optional
 
 import abc
 import asyncio
@@ -41,7 +41,9 @@ class ToolChain(abc.ABC):
 
     timeout: int = 300
 
-    def __init__(self, *folders: str, in_ci: bool) -> None:
+    search_root: Optional[str]
+
+    def __init__(self, *folders: str, in_ci: bool, search_root: Optional[str] = None) -> None:
         """
         Sets up a tool chain with the given settings.
 
@@ -51,6 +53,9 @@ class ToolChain(abc.ABC):
         self.folders = set(folders)
         self.in_ci = in_ci
         self.run_success = {}
+
+        # If gather paths is called, the search will start here
+        self.search_root = search_root
 
         self.loop = asyncio.get_event_loop()
 

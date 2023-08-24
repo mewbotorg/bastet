@@ -2,7 +2,12 @@
 #
 # SPDX-License-Identifier: BSD-2-Clause
 
-"""Support for automatically installing plugins and dependency for the repo."""
+"""
+Support for automatically installing plugins and dependency for the repo.
+
+No command line argument is provided for this - to make it more likely people will correctly call
+it with the interpreter of the venv they're trying to build.
+"""
 
 from __future__ import annotations
 

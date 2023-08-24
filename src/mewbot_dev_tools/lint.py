@@ -130,7 +130,7 @@ class LintToolchain(BanditMixin):
         #
         # There are two steps to this:
         #  - We set MYPYPATH equivalent to PYTHONPATH
-        env["MYPYPATH"] = os.pathsep.join(gather_paths("src"))
+        env["MYPYPATH"] = os.pathsep.join(gather_paths("src", search_root=self.search_root))
 
         #  - We alter the folder list such that, in src-dir folders, we pass the
         #    folder of the actual pacakge (i.e. ./src/mewbot rather than ./src)
@@ -357,7 +357,7 @@ def main() -> None:
     if not paths:
         paths = gather_paths("src", "tests") if options.tests else gather_paths("src")
 
-    linter = LintToolchain(*paths, in_ci=options.in_ci)
+    linter = LintToolchain(*paths, in_ci=options.in_ci, search_root=os.curdir)
     linter()
 
 

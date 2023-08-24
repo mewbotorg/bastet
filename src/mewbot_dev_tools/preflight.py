@@ -16,6 +16,9 @@ The aim is to make sure the code is fully tested and ready to be submitted to gi
 All tools which should be run before submission will be run.
 This script is intended to be run locally.
 """
+from typing import Optional
+
+import os
 
 from .lint import LintToolchain
 from .path import gather_paths
@@ -30,8 +33,14 @@ class PreflightToolChain(ToolChain):
     Class to run the tools in sequence.
     """
 
-    def __init__(self) -> None:
-        super().__init__(".", in_ci=False)
+    def __init__(self, search_root: Optional[str] = None) -> None:
+        """
+        Starts up the class.
+        """
+
+        self.search_root = os.curdir
+
+        super().__init__(os.curdir, in_ci=False, search_root=search_root)
 
     def run(self) -> list[Annotation]:
         """
@@ -54,7 +63,9 @@ class PreflightToolChain(ToolChain):
         :return:
         """
         with CommandDelimiter("Starting reuse run", False):
-            reuse_tool = ReuseToolchain(*self.folders, in_ci=self.in_ci)
+            reuse_tool = ReuseToolchain(
+                *self.folders, in_ci=self.in_ci, search_root=self.search_root
+            )
 
             for _ in reuse_tool.run():
                 ...
@@ -69,7 +80,7 @@ class PreflightToolChain(ToolChain):
         """
         with CommandDelimiter("Starting linting run", False):
             target_paths = gather_paths("src", "tests")
-            linter = LintToolchain(*target_paths, in_ci=False)
+            linter = LintToolchain(*target_paths, in_ci=False, search_root=self.search_root)
 
             for _ in linter.run():
                 ...
@@ -80,7 +91,7 @@ class PreflightToolChain(ToolChain):
         """Run the test suite - store the results."""
         with CommandDelimiter("Starting testing run", False):
             paths = list(gather_paths("tests"))
-            tester = TestToolchain(*paths, in_ci=False)
+            tester = TestToolchain(*paths, in_ci=False, search_root=self.search_root)
 
             for _ in tester.run():
                 ...
@@ -88,6 +99,16 @@ class PreflightToolChain(ToolChain):
             self.run_success.update(tester.run_success)
 
 
-if __name__ == "__main__":
-    preflight_toolchain = PreflightToolChain()
+def main(search_root: Optional[str] = None) -> None:
+    """
+    Run the main security analysis program(s).
+
+    :param search_root:
+    :return:
+    """
+    preflight_toolchain = PreflightToolChain(search_root=search_root)
     preflight_toolchain()
+
+
+if __name__ == "__main__":
+    main()

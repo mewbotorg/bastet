@@ -18,6 +18,7 @@ More analysis tools may be added.
 from __future__ import annotations
 
 from collections.abc import Iterable
+from typing import Optional
 
 import argparse
 import os
@@ -262,12 +263,27 @@ def parse_security_analysis_options() -> argparse.Namespace:
     return parser.parse_args()
 
 
-if __name__ == "__main__":
+def main(search_root: Optional[str] = None) -> None:
+    """
+    Run the main security analysis program(s).
+
+    :param search_root:
+    :return:
+    """
+
     options = parse_security_analysis_options()
 
     paths = options.path
     if not paths:
-        paths = gather_paths("src", "tests") if options.tests else gather_paths("src")
+        paths = (
+            gather_paths("src", "tests", search_root=search_root)
+            if options.tests
+            else gather_paths("src", search_root=search_root)
+        )
 
     linter = SecurityAnalysisToolchain(*paths, in_ci=options.in_ci)
     linter()
+
+
+if __name__ == "__main__":
+    main()
