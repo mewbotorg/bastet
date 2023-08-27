@@ -3,5 +3,5 @@
 # SPDX-License-Identifier: BSD-2-Clause
 
 """
-Dummy to make some pylint stuff work for testing.
+Tests for the entire preflight toolchain.
 """

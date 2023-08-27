@@ -12,8 +12,7 @@ As such, it can not rely on anything that would be loaded using PYTHONPATH,
 i.e. we can not use any other mewbot code from this file.
 """
 
-from collections.abc import Iterable
-from typing import Optional
+from typing import Iterable, Optional
 
 import itertools
 import os
@@ -54,6 +53,23 @@ def gather_paths(*filters: str, search_root: Optional[str] = None) -> Iterable[s
     )
 
     return (str(x.absolute()) for x in locations)
+
+
+def gather_paths_standard_locs(
+    search_root: Optional[str], tests: bool = False
+) -> Iterable[str]:
+    """
+    Gather paths from the standard locations.
+
+    Currently "src" and "tests".
+    :return:
+    """
+    paths = (
+        gather_paths("src", "tests", search_root=search_root)
+        if tests
+        else gather_paths("src", search_root=search_root)
+    )
+    return paths
 
 
 if __name__ == "__main__":

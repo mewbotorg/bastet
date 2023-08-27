@@ -63,6 +63,7 @@ class TestToolchain(ToolChain):
             "--durations=0",  # Report all tests that take more than 1s to complete
             "--durations-min=1",
             "--junitxml=reports/junit.xml",
+            "-vv",
         ]
 
         if not self.coverage:

@@ -5,12 +5,3 @@
 """
 Contains tests for mewbot-dev-tools.
 """
-
-
-def test_nothing() -> None:
-    """
-    Just to check we can actually run tests.
-
-    :return:
-    """
-    assert True is True

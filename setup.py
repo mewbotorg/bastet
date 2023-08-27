@@ -4,8 +4,9 @@
 
 import codecs
 import os
-import setuptools
 from pathlib import Path
+
+import setuptools
 
 
 # From https://packaging.python.org/en/latest/guides/single-sourcing-package-version/

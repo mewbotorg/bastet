@@ -26,7 +26,7 @@ import pprint
 import re
 import subprocess
 
-from .path import gather_paths
+from .path import gather_paths_standard_locs
 from .toolchain import Annotation, ToolChain
 
 LEVELS = frozenset({"notice", "warning", "error"})
@@ -275,11 +275,7 @@ def main(search_root: Optional[str] = None) -> None:
 
     paths = options.path
     if not paths:
-        paths = (
-            gather_paths("src", "tests", search_root=search_root)
-            if options.tests
-            else gather_paths("src", search_root=search_root)
-        )
+        paths = gather_paths_standard_locs(search_root=search_root, tests=options.tests)
 
     linter = SecurityAnalysisToolchain(*paths, in_ci=options.in_ci)
     linter()

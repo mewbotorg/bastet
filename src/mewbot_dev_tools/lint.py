@@ -4,6 +4,10 @@
 #
 # SPDX-License-Identifier: BSD-2-Clause
 
+
+# pylint: disable=import-outside-toplevel
+
+
 """
 Wrapper class for running linting tools.
 
@@ -16,17 +20,40 @@ module or any installed plugins - are linted.
 from __future__ import annotations
 
 from collections.abc import Iterable
+from typing import Optional, Union
 
 import argparse
+import dataclasses
 import os
 import subprocess
 import sys
 
-from .path import gather_paths
+from .path import gather_paths, gather_paths_standard_locs
 from .security_analysis import BanditMixin
 from .toolchain import Annotation
 
 LEVELS = frozenset({"notice", "warning", "error"})
+
+
+@dataclasses.dataclass
+class LintOptions:
+    """
+    Used for programmatic invocations of lint when you might not want to deal with argparse.
+
+    Mostly written for testing purposes - but there might be other uses.
+    """
+
+    path: list[str]
+    in_ci: bool = False
+    tests: bool = True
+
+    def __init__(self) -> None:
+        """
+        Some startup tasks need to be done on init.
+        """
+        self.path = [
+            os.getcwd(),
+        ]
 
 
 class LintToolchain(BanditMixin):
@@ -220,7 +247,23 @@ def lint_black_errors(
         if not error or ":" not in error:
             continue
 
-        level, header, message, line, char, info = error.split(":", 5)
+        try:
+            level, header, message, line, char, info = error.split(":", 5)
+        except ValueError as exp:
+            # We're (hopefully) reporting on a reformat event
+            if error.lower().startswith("reformatted"):
+                level = "error"
+                header = "File reformatted"
+                _, file = header.split(" ")
+                line = "0"
+                char = "0"
+                info = "File reformatted"
+                yield Annotation(
+                    level, file, int(line), int(char), "black", error.strip(), info.strip()
+                )
+                continue
+            raise NotImplementedError(f"Unexpected case '{error}'") from exp
+
         header, _, file = header.rpartition(" ")
 
         level = level.strip() if level.strip() in LEVELS else "error"
@@ -345,17 +388,22 @@ def parse_lint_options() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def main() -> None:
+def main(
+    search_root: Optional[str] = None, programatic_options: Optional[LintOptions] = None
+) -> None:
     """
     Needed for script packaging.
 
+    :param search_root:
     :return:
     """
-    options = parse_lint_options()
+    options: Union[LintOptions, argparse.Namespace] = (
+        parse_lint_options() if programatic_options is None else programatic_options
+    )
 
     paths = options.path
     if not paths:
-        paths = gather_paths("src", "tests") if options.tests else gather_paths("src")
+        paths = gather_paths_standard_locs(search_root=search_root, tests=options.tests)
 
     linter = LintToolchain(*paths, in_ci=options.in_ci, search_root=os.curdir)
     linter()
