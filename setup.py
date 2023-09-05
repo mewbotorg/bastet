@@ -95,8 +95,8 @@ setuptools.setup(
     license=true_license_text,
     classifiers=[
         "Programming Language :: Python :: 3",
-        f"License :: OSI Approved :: {true_license_ident}",
-        "Framework :: mewbot",
+        # f"License :: OSI Approved :: {true_license_ident}",
+        # "Framework :: mewbot",
         "Operating System :: OS Independent",
     ],
     package_dir={"": "src"},
