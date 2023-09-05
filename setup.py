@@ -100,7 +100,7 @@ setuptools.setup(
         "Operating System :: OS Independent",
     ],
     package_dir={"": "src"},
-    packages=setuptools.find_namespace_packages(where="src", include=["mewbot.*"]),
+    # packages=setuptools.find_namespace_packages(where="src", include=["mewbot.*"]),
     # see https://packaging.python.org/en/latest/specifications/entry-points/
     entry_points={
         "console_scripts": [
