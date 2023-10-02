@@ -8,6 +8,10 @@
 
 line-length = 94
 
+[tool.ruff]
+
+line-length = 94
+
 [tool.pylint."MASTER"]
 
 persistent = "yes"

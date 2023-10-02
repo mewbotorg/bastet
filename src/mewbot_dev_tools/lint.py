@@ -69,6 +69,7 @@ class LintToolchain(BanditMixin):
     def run(self) -> Iterable[Annotation]:
         """Runs the linting tools in sequence."""
 
+        yield from self.lint_ruff()
         yield from self.lint_isort()
         yield from self.lint_black()
         yield from self.lint_flake8()
@@ -197,6 +198,33 @@ class LintToolchain(BanditMixin):
         result_lines = result.stdout.decode("utf-8", errors="replace")
 
         for line in result_lines.split("\n"):
+            if ":" not in line:
+                continue
+
+            try:
+                file, line_no, col, error = line.strip().split(":", 3)
+                yield Annotation("error", file, int(line_no), int(col), "pylint", "", error)
+            except ValueError:
+                pass
+
+    def lint_ruff(self) -> Iterable[Annotation]:
+        """
+        Runs 'ruff', a high performance python linter written in rust.
+
+        Theoretically ruff is a superset of a number of other linters used here. It may take over
+        as the default linter - for normal runs.
+        However, for CI runs before accepting code, it makes sense to run the other linters as
+        well.
+        There should be no difference, but they are the reference implementations.
+        Time is also less of a factor in a rare CI acceptance run.
+        """
+
+        result = self.run_tool("Ruff", "ruff")
+
+        result_lines = result.stdout.decode("utf-8", errors="replace")
+
+        for line in result_lines.split("\n"):
+
             if ":" not in line:
                 continue
 
