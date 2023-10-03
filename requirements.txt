@@ -22,6 +22,7 @@ pylint>=2.16.0
 pytest-github-actions-annotate-failures>=0.1.7
 pydocstyle>=6.3.0
 isort>=5.12.0
+ruff>=0.0.292
 
 # Security Analysis toolchain
 bandit~=1.7.5
