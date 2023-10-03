@@ -224,7 +224,6 @@ class LintToolchain(BanditMixin):
         result_lines = result.stdout.decode("utf-8", errors="replace")
 
         for line in result_lines.split("\n"):
-
             if ":" not in line:
                 continue
 
