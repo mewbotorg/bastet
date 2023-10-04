@@ -3,12 +3,12 @@
 # SPDX-License-Identifier: BSD-2-Clause
 
 """
-Front end for the annotation script.
+Front end for the install_deps method.
 """
 
 import os
 from functools import partial
 
-from ..annotate import main as annotate_main
+from ..install_deps import main as install_deps_main
 
-main = partial(annotate_main, search_root=os.getcwd())
+main = partial(install_deps_main, search_root=os.getcwd())

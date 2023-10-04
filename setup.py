@@ -110,6 +110,8 @@ setuptools.setup(
             "mewbot-security-analysis="
             "mewbot_dev_tools.console_scripts.mewbot_security_analysis:main",
             "mewbot-preflight=mewbot_dev_tools.console_scripts.mewbot_preflight:main",
+            "mewbot-install-deps=mewbot_dev_tools.console_scripts.mewbot_install_deps:main",
+            "mewbot-annotate=mewbot_dev_tools.console_scripts.mewbot_install_annotate:main",
         ]
     },
     python_requires=">=3.10",  # Might be relaxed later

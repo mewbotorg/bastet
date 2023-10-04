@@ -36,7 +36,7 @@ class Annotate(ToolChain):
     with problems.
     """
 
-    def __init__(self, search_root: Optional[str]) -> None:
+    def __init__(self, search_root: Optional[str] = None) -> None:
         """
         Starts up the class.
         """
@@ -136,5 +136,12 @@ class Annotate(ToolChain):
         print("Total Issues:", len(issues))
 
 
+def main(search_root: Optional[str] = None) -> None:
+    """
+    Produces annotations from the given dir.
+    """
+    Annotate(search_root=search_root)()
+
+
 if __name__ == "__main__":
-    Annotate()()
+    main()

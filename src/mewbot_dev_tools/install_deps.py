@@ -33,16 +33,18 @@ def main(search_root: Optional[str] = None) -> bool:
 
     for file in dot.glob("requirements-*.txt"):
         requirements.extend(("-r", str(file)))
-        requirements_files.extend((str(file), ))
+        requirements_files.extend((str(file),))
 
     for file in gather_paths("requirements.txt"):
         requirements.extend(("-r", str(file)))
-        requirements_files.extend((str(file), ))
+        requirements_files.extend((str(file),))
 
-    print("Installing dependencies\n"
-          f"base_dir: {str(dot.absolute())}"
-          f"\n{pprint.pformat(requirements_files)}\n"
-          "will be installed.")
+    print(
+        "Installing dependencies\n"
+        f"base_dir: {str(dot.absolute())}"
+        f"\n{pprint.pformat(requirements_files)}\n"
+        "will be installed."
+    )
 
     subprocess.check_call([sys.executable, "-m", "pip", "install", *requirements])
     return True
