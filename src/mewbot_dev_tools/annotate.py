@@ -16,6 +16,7 @@ with problems.
 from __future__ import annotations
 
 from collections.abc import Iterable
+from typing import Optional
 
 import json
 import os
@@ -35,7 +36,13 @@ class Annotate(ToolChain):
     with problems.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, search_root: Optional[str]) -> None:
+        """
+        Starts up the class.
+        """
+
+        self.search_root = os.curdir if search_root is None else search_root
+
         super().__init__("reports", in_ci="GITHUB_ACTIONS" in os.environ)
 
     def __call__(self) -> None:

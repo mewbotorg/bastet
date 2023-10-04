@@ -152,7 +152,7 @@ class ToolChain(abc.ABC):
         arg_list = list(args)
         arg_list.extend(folders if folders is not None else self.folders)
 
-        print(f"{arg_list = }")
+        print(f"{arg_list = }\n")
 
         run_result = await self._run_utility(name, arg_list, env)
         assert isinstance(run_result, subprocess.CompletedProcess)

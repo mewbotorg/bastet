@@ -38,9 +38,9 @@ class PreflightToolChain(ToolChain):
         Starts up the class.
         """
 
-        self.search_root = os.curdir
+        self.search_root = os.curdir if search_root is None else search_root
 
-        super().__init__(os.curdir, in_ci=False, search_root=search_root)
+        super().__init__(self.search_root, in_ci=False, search_root=search_root)
 
     def run(self) -> list[Annotation]:
         """
