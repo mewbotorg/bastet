@@ -30,6 +30,10 @@ def get_version(rel_path):
     :param rel_path:
     :return:
     """
+
+    if "RELEASE_VERSION" in os.environ:
+        return os.environ["RELEASE_VERSION"]
+
     for line in read(rel_path).splitlines():
         if line.startswith("__version__"):
             delim = '"' if '"' in line else "'"
@@ -107,12 +111,11 @@ setuptools.setup(
             "mewbot-lint=mewbot_dev_tools.console_scripts.mewbot_lint:main",
             "mewbot-reuse=mewbot_dev_tools.console_scripts.mewbot_reuse:main",
             "mewbot-test=mewbot_dev_tools.console_scripts.mewbot_test:main",
-            "mewbot-security-analysis="
-            "mewbot_dev_tools.console_scripts.mewbot_security_analysis:main",
+            "mewbot-security-analysis=mewbot_dev_tools.console_scripts.mewbot_security_analysis:main",
             "mewbot-preflight=mewbot_dev_tools.console_scripts.mewbot_preflight:main",
             "mewbot-install-deps=mewbot_dev_tools.console_scripts.mewbot_install_deps:main",
             "mewbot-annotate=mewbot_dev_tools.console_scripts.mewbot_install_annotate:main",
         ]
     },
-    python_requires=">=3.10",  # Might be relaxed later
+    python_requires=">=3.10",
 )
