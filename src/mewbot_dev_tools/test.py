@@ -18,7 +18,9 @@ from collections.abc import Iterable
 from typing import Optional
 
 import argparse
+import glob
 import os
+import pathlib
 
 from .path import gather_paths
 from .toolchain import Annotation, ToolChain
@@ -133,9 +135,26 @@ def main(search_root: Optional[str] = None) -> None:
 
     # Set up coverage, if requested
     testing.coverage = options.coverage or options.covering or options.in_ci
-    testing.covering = options.covering or list(gather_paths("src"))
+    testing.covering = options.covering or gather_files(gather_paths("src"))
 
     testing()
+
+
+def gather_files(base_paths: Iterable[str]) -> list[str]:
+    """
+    Used to explicitly declare all the .py files of interest for coverage
+    """
+    base_paths = [pn for pn in base_paths]
+
+    rtn_list: list[str] = []
+    rtn_list.extend(base_paths)
+
+    for base_path in base_paths:
+
+        rtn_list.extend([_ for _ in glob.glob("**/*.py", root_dir=base_path, recursive=True)])
+
+    return rtn_list
+
 
 
 if __name__ == "__main__":

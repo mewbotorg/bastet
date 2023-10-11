@@ -86,14 +86,19 @@ class LintToolchain(BanditMixin):
         readability and code style compliance.
         """
 
-        args = ["isort"]
+        args = ["isort", ]
 
         if self.in_ci:
             args.extend(["--diff", "--quiet"])
 
-        result = self.run_tool("isort (Imports Orderer)", *args)
+        isort_name: str = "isort (Imports Re-ordering)"
+        result = self.run_tool(isort_name, *args)
 
-        yield from lint_isort_diffs(result)
+        # isort returns code 0 if the program runs successfully.
+        # It does not care if the ordering is correct
+        # So need to give the method which processes the output the chance to complain
+
+        yield from lint_isort_diffs(result, isort_name, self.run_success)
 
     def lint_black(self) -> Iterable[Annotation]:
         """
@@ -302,6 +307,8 @@ def lint_black_errors(
 
 def lint_isort_diffs(
     result: subprocess.CompletedProcess[bytes],
+    tool_name: str,
+    run_success: dict[str, bool]
 ) -> Iterable[Annotation]:
     """Processes 'blacks' output in to annotations."""
 
@@ -309,12 +316,17 @@ def lint_isort_diffs(
     line = 0
     buffer = ""
 
-    for diff_line in result.stdout.decode("utf-8").split("\n"):
+    result_lines = [_ for _ in result.stdout.decode("utf-8").split("\n")]
+
+    # Process diff lines
+    for diff_line in result_lines:
+
         if diff_line.startswith("+++ "):
             continue
 
         if diff_line.startswith("--- "):
             if file and buffer:
+                run_success[tool_name] = False
                 yield Annotation("error", file, line, 1, "isort", "isort alteration", buffer)
 
             buffer = ""
@@ -323,7 +335,8 @@ def lint_isort_diffs(
 
         if diff_line.startswith("@@"):
             if file and buffer:
-                yield Annotation("error", file, line, 1, "isort", "isort altteration", buffer)
+                run_success[tool_name] = False
+                yield Annotation("error", file, line, 1, "isort", "isort alteration", buffer)
 
             _, start, _, _ = diff_line.split(" ")
             _line, _ = start.split(",")
@@ -332,6 +345,14 @@ def lint_isort_diffs(
             continue
 
         buffer += diff_line + "\n"
+
+    # Process fixing lines
+    for cand_result_line in result_lines:
+
+        if cand_result_line.lower().startswith("fixing"):
+            _, file_path = cand_result_line.split(" ")
+            run_success[tool_name] = False
+            yield Annotation("error", file_path, 0, 1, "isort", "isort alteration", cand_result_line)
 
 
 def lint_black_diffs(
