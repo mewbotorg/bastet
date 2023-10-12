@@ -86,7 +86,9 @@ class LintToolchain(BanditMixin):
         readability and code style compliance.
         """
 
-        args = ["isort", ]
+        args = [
+            "isort",
+        ]
 
         if self.in_ci:
             args.extend(["--diff", "--quiet"])
@@ -306,21 +308,28 @@ def lint_black_errors(
 
 
 def lint_isort_diffs(
-    result: subprocess.CompletedProcess[bytes],
-    tool_name: str,
-    run_success: dict[str, bool]
+    result: subprocess.CompletedProcess[bytes], tool_name: str, run_success: dict[str, bool]
 ) -> Iterable[Annotation]:
     """Processes 'blacks' output in to annotations."""
 
+    result_lines = list(result.stdout.decode("utf-8").split("\n"))
+
+    yield from isort_diffs_to_annotations(result_lines, tool_name, run_success)
+    yield from isort_fix_lines_to_annotations(result_lines, tool_name, run_success)
+
+
+def isort_diffs_to_annotations(
+    result_lines: list[str], tool_name: str, run_success: dict[str, bool]
+) -> Iterable[Annotation]:
+    """
+    Transform lines from isort output into annotations - for isort diffs.
+    """
     file = ""
     line = 0
     buffer = ""
 
-    result_lines = [_ for _ in result.stdout.decode("utf-8").split("\n")]
-
     # Process diff lines
     for diff_line in result_lines:
-
         if diff_line.startswith("+++ "):
             continue
 
@@ -346,13 +355,22 @@ def lint_isort_diffs(
 
         buffer += diff_line + "\n"
 
+
+def isort_fix_lines_to_annotations(
+    result_lines: list[str], tool_name: str, run_success: dict[str, bool]
+) -> Iterable[Annotation]:
+    """
+    Transform lines from isort output into annotations - for isort fixed lines.
+    """
+
     # Process fixing lines
     for cand_result_line in result_lines:
-
         if cand_result_line.lower().startswith("fixing"):
             _, file_path = cand_result_line.split(" ")
             run_success[tool_name] = False
-            yield Annotation("error", file_path, 0, 1, "isort", "isort alteration", cand_result_line)
+            yield Annotation(
+                "error", file_path, 0, 1, "isort", "isort alteration", cand_result_line
+            )
 
 
 def lint_black_diffs(

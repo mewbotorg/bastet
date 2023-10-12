@@ -15,6 +15,7 @@ import asyncio
 import dataclasses
 import json
 import os
+import pprint
 import subprocess
 import sys
 from io import BytesIO
@@ -152,8 +153,6 @@ class ToolChain(abc.ABC):
         arg_list = list(args)
         arg_list.extend(folders if folders is not None else self.folders)
 
-        print(f"{arg_list = }\n")
-
         run_result = await self._run_utility(name, arg_list, env)
         assert isinstance(run_result, subprocess.CompletedProcess)
 
@@ -184,6 +183,8 @@ class ToolChain(abc.ABC):
         with CommandDelimiter(name, self.in_ci):
             env = env.copy()
             env.update(os.environ)
+
+            print(f"Running {name} with args = \n{pprint.pformat(arg_list)}\n")
 
             process = await asyncio.create_subprocess_exec(
                 *arg_list,

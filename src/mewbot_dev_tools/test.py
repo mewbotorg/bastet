@@ -20,7 +20,6 @@ from typing import Optional
 import argparse
 import glob
 import os
-import pathlib
 
 from .path import gather_paths
 from .toolchain import Annotation, ToolChain
@@ -142,19 +141,17 @@ def main(search_root: Optional[str] = None) -> None:
 
 def gather_files(base_paths: Iterable[str]) -> list[str]:
     """
-    Used to explicitly declare all the .py files of interest for coverage
+    Used to explicitly declare all the .py files of interest for coverage.
     """
-    base_paths = [pn for pn in base_paths]
+    base_paths = list(base_paths)
 
     rtn_list: list[str] = []
     rtn_list.extend(base_paths)
 
     for base_path in base_paths:
-
-        rtn_list.extend([_ for _ in glob.glob("**/*.py", root_dir=base_path, recursive=True)])
+        rtn_list.extend(list(glob.glob("**/*.py", root_dir=base_path, recursive=True)))
 
     return rtn_list
-
 
 
 if __name__ == "__main__":
