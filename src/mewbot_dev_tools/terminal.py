@@ -11,6 +11,7 @@ from __future__ import annotations
 from types import TracebackType
 from typing import IO
 
+import pprint
 import shutil
 import sys
 
@@ -34,6 +35,7 @@ class CommandDelimiter:
         """
         self.tool_name = tool_name
         self.in_ci = in_ci
+        self.args = args
         self.delim_char = delim_char
 
     @property
@@ -51,6 +53,7 @@ class CommandDelimiter:
 
         if self.in_ci:
             sys.stdout.write(f"::group::{self.tool_name}\n")
+            sys.stdout.write(f"Running {name} with args = \n{pprint.pformat(arg_list)}\n")
         else:
             trailing_dash_count = min(80, self.terminal_width) - 6 - len(self.tool_name)
             sys.stdout.write(
