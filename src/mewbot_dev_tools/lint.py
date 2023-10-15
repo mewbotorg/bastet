@@ -69,9 +69,11 @@ class LintToolchain(BanditMixin):
     def run(self) -> Iterable[Annotation]:
         """Runs the linting tools in sequence."""
 
-        yield from self.lint_ruff()
+        # Linters that can mutate code
         yield from self.lint_isort()
         yield from self.lint_black()
+        yield from self.lint_ruff()
+        # Linters that only read code
         yield from self.lint_flake8()
         yield from self.lint_mypy()
         yield from self.lint_pylint()
@@ -226,7 +228,12 @@ class LintToolchain(BanditMixin):
         Time is also less of a factor in a rare CI acceptance run.
         """
 
-        result = self.run_tool("Ruff", "ruff")
+        args = ["ruff"]
+
+        if not self.in_ci:
+            args.extend("--fix")
+
+        result = self.run_tool("Ruff", *args)
 
         result_lines = result.stdout.decode("utf-8", errors="replace")
 

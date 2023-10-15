@@ -46,14 +46,10 @@ class BanditMixin(ToolChain):
         bandit scans a code base for security vulnerabilities.
         """
 
-        args = ["bandit", "-r"]
+        args = ["bandit", "-c", "pyproject.toml", "-r"]
 
-        if self.in_ci:
-            # Number of "l"s in -ll e.t.c controls the warning level
-            # default to medium and higher severity
-            args.extend(["--quiet", "-ll"])
-        else:
-            args.extend(["-ll"])
+        if not self.in_ci:
+            args.extend(["--quiet"])
 
         result = self.run_tool("Bandit (Security Analysis)", *args)
 

@@ -15,7 +15,6 @@ import asyncio
 import dataclasses
 import json
 import os
-import pprint
 import subprocess
 import sys
 from io import BytesIO
@@ -180,11 +179,9 @@ class ToolChain(abc.ABC):
         """
 
         # Print output header
-        with CommandDelimiter(name, self.in_ci):
+        with CommandDelimiter(name, self.in_ci, arg_list):
             env = env.copy()
             env.update(os.environ)
-
-            print(f"Running {name} with args = \n{pprint.pformat(arg_list)}\n")
 
             process = await asyncio.create_subprocess_exec(
                 *arg_list,

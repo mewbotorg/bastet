@@ -17,25 +17,5 @@ This mostly consist of tool chains for
  - building the docs (still forthcoming)
  - gather and run the tests
 
-The aim of these tools is that, if you run them on a code base, you should end up with something which conforms to 
-mewbot's guidelines.
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+The aim of these tools is that, if you run them on a code base, you should
+end up with something which conforms to mewbot's guidelines.
