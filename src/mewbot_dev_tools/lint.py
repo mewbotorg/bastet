@@ -231,7 +231,7 @@ class LintToolchain(BanditMixin):
         args = ["ruff"]
 
         if not self.in_ci:
-            args.extend("--fix")
+            args.append("--fix")
 
         result = self.run_tool("Ruff", *args)
 

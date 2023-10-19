@@ -9,7 +9,7 @@ Set of basic tools to improve command line readability.
 from __future__ import annotations
 
 from types import TracebackType
-from typing import IO
+from typing import IO, Optional
 
 import pprint
 import shutil
@@ -25,7 +25,13 @@ class CommandDelimiter:
     delim_char: str
     in_ci: bool
 
-    def __init__(self, tool_name: str, in_ci: bool, delim_char: str = "=") -> None:
+    def __init__(
+        self,
+        tool_name: str,
+        in_ci: bool,
+        args: Optional[list[str]] = None,
+        delim_char: str = "=",
+    ) -> None:
         """
         Supplied with the name of the tool and the deliminator char to create a display.
 
@@ -53,7 +59,9 @@ class CommandDelimiter:
 
         if self.in_ci:
             sys.stdout.write(f"::group::{self.tool_name}\n")
-            sys.stdout.write(f"Running {name} with args = \n{pprint.pformat(arg_list)}\n")
+            sys.stdout.write(
+                f"Running {self.tool_name} with args = \n{pprint.pformat(self.args)}\n"
+            )
         else:
             trailing_dash_count = min(80, self.terminal_width) - 6 - len(self.tool_name)
             sys.stdout.write(

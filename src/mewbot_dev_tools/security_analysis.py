@@ -10,7 +10,7 @@ Wrapper class for the security analysis toolchain.
 Any program which is exposed to the internet, and hs to process user input (as mewbot should be
 able to, at least) has to deal with a number of security concerns.
 Static security analysis can help with this.
-Currently this runs bandit - a static security analysis toolkit.
+Currently, this runs bandit - a static security analysis toolkit.
 More analysis tools may be added.
 """
 
@@ -53,7 +53,41 @@ class BanditMixin(ToolChain):
 
         result = self.run_tool("Bandit (Security Analysis)", *args)
 
+        if self.check_for_bad_bandit_config(result):
+            print(
+                "\n"
+                "WARNING - bad bandit section in pyproject.toml"
+                "\n"
+                "Disregard above."
+                "\n"
+                "Running again with default args"
+                "\n"
+            )
+
+            args = ["bandit", "-r", "-ll"]
+
+            if not self.in_ci:
+                args.extend(["--quiet"])
+
+            result = self.run_tool("Bandit (Security Analysis)", *args)
+
         yield from lint_bandit_output(result)
+
+    @staticmethod
+    def check_for_bad_bandit_config(result: subprocess.CompletedProcess[bytes]) -> bool:
+        """
+        Check the subprocess output for a KeyError - which indicates a bad config file.
+
+        Not so much bad as not including an absence of a bandit tool section in the file.
+        """
+        stdout_errors = result.stdout.decode("utf-8").split("\n")
+        stderr_errors = result.stderr.decode("utf-8").split("\n")
+
+        for line in stdout_errors + stderr_errors:
+            if line.lower().strip() == "keyerror: 'bandit'":
+                return True
+
+        return False
 
 
 class SecurityAnalysisToolchain(BanditMixin):
