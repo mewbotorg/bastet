@@ -288,30 +288,55 @@ def lint_black_errors(
         if not error or ":" not in error:
             continue
 
+        # Note - Improve error handling here - this could yield an annotation
+        if error.lower().startswith("error: cannot format"):
+            raise NotImplementedError("black cannot parse this file")
+
+        # We're (hopefully) reporting on a reformat event
+        if error.lower().startswith("reformatted"):
+            yield _process_reformat_line(error)
+            continue
+
+        # We should, at this point, have a conventional error
+        level, _, message, line, char, info, file = _tokenize_error_line(error)
+
+        # It's possible the splitting has, coincidentally, worked when it shouldn't
+        # Hence the error handling here
         try:
-            level, header, message, line, char, info = error.split(":", 5)
+            yield Annotation(
+                level, file, int(line), int(char), "black", message.strip(), info.strip()
+            )
         except ValueError as exp:
-            # We're (hopefully) reporting on a reformat event
-            if error.lower().startswith("reformatted"):
-                level = "error"
-                header = "File reformatted"
-                _, file = header.split(" ")
-                line = "0"
-                char = "0"
-                info = "File reformatted"
-                yield Annotation(
-                    level, file, int(line), int(char), "black", error.strip(), info.strip()
-                )
-                continue
-            raise NotImplementedError(f"Unexpected case '{error}'") from exp
+            raise ValueError(f"Could not yield - could not parse line {error}") from exp
 
-        header, _, file = header.rpartition(" ")
 
-        level = level.strip() if level.strip() in LEVELS else "error"
+def _tokenize_error_line(error: str) -> tuple[str, str, str, str, str, str, str]:
+    """
+    Attempt to tokenize an error line into a format which we can use to yield annotations.
+    """
+    try:
+        level, header, message, line, char, info = error.split(":", 5)
+    except ValueError as exp:
+        raise NotImplementedError(f"Unexpected case '{error}'") from exp
 
-        yield Annotation(
-            level, file, int(line), int(char), "black", message.strip(), info.strip()
-        )
+    header, _, file = header.rpartition(" ")
+
+    level = level.strip() if level.strip() in LEVELS else "error"
+
+    return level, header, message, line, char, info, file
+
+
+def _process_reformat_line(error: str) -> Annotation:
+    """
+    A reformat line has been detected - process it.
+    """
+    level = "error"
+    header = "File reformatted"
+    _, file = header.split(" ")
+    line = "0"
+    char = "0"
+    info = "File reformatted"
+    return Annotation(level, file, int(line), int(char), "black", error.strip(), info.strip())
 
 
 def lint_isort_diffs(
