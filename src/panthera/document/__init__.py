@@ -22,7 +22,7 @@ import pathlib
 import re
 import shutil
 
-from .toolchain import Annotation, ToolChain
+from ..toolchain import Annotation, ToolChain
 
 TOP_LEVEL_FILES_LINK_NAME: str = "top_level_md_files"
 

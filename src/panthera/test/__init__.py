@@ -21,8 +21,8 @@ import argparse
 import glob
 import os
 
-from .path import gather_paths
-from .toolchain import Annotation, ToolChain
+from ..path import gather_paths
+from ..toolchain import Annotation, ToolChain
 
 
 class TestToolchain(ToolChain):

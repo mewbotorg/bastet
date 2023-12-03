@@ -12,6 +12,8 @@ As such, it can not rely on anything that would be loaded using PYTHONPATH,
 i.e. we can not use any other mewbot code from this file.
 """
 
+from __future__ import annotations
+
 from typing import Iterable, Optional
 
 import itertools

@@ -6,10 +6,12 @@
 Provides support for the linting toolchain.
 """
 
+from __future__ import annotations
+
 import os
 
-from ..lint import LintToolchain, parse_lint_options
 from ..path import gather_paths
+from . import LintToolchain, parse_lint_options
 
 
 def main() -> None:

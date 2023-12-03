@@ -18,21 +18,18 @@ More analysis tools may be added.
 from __future__ import annotations
 
 from collections.abc import Iterable
-from typing import Optional
 
-import argparse
-import os
+import abc
 import pprint
 import re
 import subprocess
 
-from .path import gather_paths_standard_locs
-from .toolchain import Annotation, ToolChain
+from ..toolchain import Annotation, ToolChain
 
 LEVELS = frozenset({"notice", "warning", "error"})
 
 
-class BanditMixin(ToolChain):
+class BanditMixin(ToolChain, abc.ABC):
     """
     Helper class to include bandit function in other tool chains.
     """
@@ -262,54 +259,3 @@ def severity_to_level(severity: str) -> str:
         return "error"
 
     raise NotImplementedError(f"severity {severity} not recognized!")
-
-
-def parse_security_analysis_options() -> argparse.Namespace:
-    """Parse command line argument for the security analysis tools."""
-
-    parser = argparse.ArgumentParser(description="Run security analysis for mewbot")
-    parser.add_argument(
-        "-n",
-        "--no-tests",
-        action="store_false",
-        default=True,
-        dest="tests",
-        help="Exclude tests from security analysis",
-    )
-    parser.add_argument(
-        "path",
-        nargs="*",
-        default=[],
-        help="Path of a file or a folder of files for security analysis.",
-    )
-    parser.add_argument(
-        "--ci",
-        dest="in_ci",
-        default="GITHUB_ACTIONS" in os.environ,
-        action="store_true",
-        help="Run in GitHub actions mode",
-    )
-
-    return parser.parse_args()
-
-
-def main(search_root: Optional[str] = None) -> None:
-    """
-    Run the main security analysis program(s).
-
-    :param search_root:
-    :return:
-    """
-
-    options = parse_security_analysis_options()
-
-    paths = options.path
-    if not paths:
-        paths = gather_paths_standard_locs(search_root=search_root, tests=options.tests)
-
-    linter = SecurityAnalysisToolchain(*paths, in_ci=options.in_ci)
-    linter()
-
-
-if __name__ == "__main__":
-    main()

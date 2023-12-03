@@ -241,7 +241,7 @@ async def read_pipe(pipe: asyncio.StreamReader, *mirrors: BinaryIO) -> IO[bytes]
     buffer = BytesIO()
 
     while not pipe.at_eof():
-        block = await pipe.readline()
+        block = await pipe.read(4096)
         for mirror in mirrors:
             mirror.write(block)
             mirror.flush()

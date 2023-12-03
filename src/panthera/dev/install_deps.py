@@ -19,7 +19,7 @@ import pprint
 import subprocess
 import sys
 
-from .path import gather_paths
+from ..path import gather_paths
 
 
 def main(search_root: Optional[str] = None) -> bool:

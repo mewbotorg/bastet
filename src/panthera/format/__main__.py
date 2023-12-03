@@ -6,12 +6,14 @@
 Exposes the mewbot-reuse function - which embeds copyright information into all files.
 """
 
+from __future__ import annotations
+
 from typing import Optional
 
 import json
 import os
 
-from ..reuse import ReuseToolchain
+from .reuse import ReuseToolchain
 
 
 def load_copyright_file() -> tuple[Optional[str], Optional[str]]:

@@ -6,6 +6,7 @@
 Dummy to make some pylint stuff work for testing.
 """
 
+from __future__ import annotations
 
 # pylint:disable=import-outside-toplevel
 
@@ -21,7 +22,7 @@ class TestImports:
 
         :return:
         """
-        from mewbot_dev_tools.annotate import Annotate
+        from panthera.annotate import Annotate
 
         assert Annotate is not None
 
@@ -31,7 +32,7 @@ class TestImports:
 
         :return:
         """
-        from mewbot_dev_tools.docs import DocToolchain
+        from panthera.document import DocToolchain
 
         assert DocToolchain is not None
 
@@ -41,7 +42,7 @@ class TestImports:
 
         :return:
         """
-        from mewbot_dev_tools.install_deps import main
+        from panthera.dev.install_deps import main
 
         assert main is not None
 
@@ -51,6 +52,6 @@ class TestImports:
 
         :return:
         """
-        from mewbot_dev_tools.lint import LintToolchain
+        from panthera.lint import LintToolchain
 
         assert LintToolchain is not None

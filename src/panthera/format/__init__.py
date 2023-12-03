@@ -3,5 +3,5 @@
 # SPDX-License-Identifier: BSD-2-Clause
 
 """
-Tests for the entire preflight toolchain.
+Panthera tools which reformat (or otherwise mutate) the source code.
 """

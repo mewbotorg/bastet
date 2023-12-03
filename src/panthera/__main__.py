@@ -16,13 +16,15 @@ The aim is to make sure the code is fully tested and ready to be submitted to gi
 All tools which should be run before submission will be run.
 This script is intended to be run locally.
 """
+from __future__ import annotations
+
 from typing import Optional
 
 import os
 
+from .format.reuse import ReuseToolchain
 from .lint import LintToolchain
 from .path import gather_paths
-from .reuse import ReuseToolchain
 from .terminal import CommandDelimiter
 from .test import TestToolchain
 from .toolchain import Annotation, ToolChain
@@ -111,4 +113,4 @@ def main(search_root: Optional[str] = None) -> None:
 
 
 if __name__ == "__main__":
-    main()
+    main(os.getcwd())

@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: BSD-2-Clause
 
-# # pylint: disable=too-many-lines
-
 """
 This script is responsible for constructing a venv which you can use for mewbot dev.
 
@@ -22,6 +20,8 @@ Which is a potentially quite significant security hole.
 Therefore, the requirement on the file name.
 """
 
+from __future__ import annotations
+
 from types import TracebackType
 from typing import Any, ClassVar, List, Optional, TypeVar
 
@@ -38,7 +38,8 @@ import shutil
 import string
 import subprocess
 import sys
-import unittest
+
+# pylint: disable=wrong-import-position,too-many-lines
 
 SEPERATOR = "=" * 50
 
@@ -1066,61 +1067,6 @@ def _do_egg_info_move(src_folder_path: str, venv_path: str) -> None:
         shutil.move(src=cand_obj, dst=new_egg_info_path)
 
 
-#
-#######################################################
-
-#######################################################
-#
-# - TEST SUITE
-
-
-class TestVenv(unittest.TestCase):
-    """
-    Tests to be run on the venv after it's been created - using unittest so no external deps.
-
-    Should be run within the venv.
-    """
-
-    def test_imports(self) -> None:
-        """Attempt to import all the modules that should be installed."""
-        # pylint: disable=import-outside-toplevel
-        # This is a namespace plugin - so shouldn't have a file
-        import mewbot as mewbot_test
-
-        assert mewbot_test is not None
-        assert not mewbot_test.__file__
-
-        import mewbot.api as mewbot_api_test
-
-        assert mewbot_api_test is not None
-        assert (
-            pathlib.Path(mewbot_api_test.__file__).absolute()
-            == pathlib.Path(MEWBOT_MODULE_PATH).joinpath("api", "__init__.py").absolute()
-        )
-
-        import mewbot.core as mewbot_core_test
-
-        assert mewbot_core_test is not None
-        assert (
-            pathlib.Path(mewbot_core_test.__file__).absolute()
-            == pathlib.Path(MEWBOT_MODULE_PATH).joinpath("core", "__init__.py").absolute()
-        )
-
-        # This is a namespace plugin - so shouldn't have a file
-        import mewbot.io as mewbot_io_test
-
-        assert mewbot_io_test is not None
-        assert not mewbot_io_test.__file__
-
-        import mewbot.test as mewbot_test_test
-
-        assert mewbot_test_test is not None
-        assert (
-            pathlib.Path(mewbot_test_test.__file__).absolute()
-            == pathlib.Path(MEWBOT_MODULE_PATH).joinpath("test", "__init__.py").absolute()
-        ), f"{pathlib.Path(mewbot_test_test.__file__).absolute()}"
-
-
 def _test_build_venv(venv_python_path: str) -> None:
     """
     Install locally editable versions of the submodules.
@@ -1150,13 +1096,7 @@ if __name__ == "__main__":
 
     parser.add_argument("base_folder", default=os.getcwd())
     parser.add_argument("venv_name", default="test_mewbot_venv")
-    parser.add_argument("-t", "--test", help="increase output verbosity", action="store_true")
 
     parsed_args = parser.parse_args()
 
-    if parsed_args.test:
-        sys.argv = sys.argv[0:1]
-
-        unittest.main(verbosity=2)
-    else:
-        sys.exit(0 if main(parsed_args) else 1)
+    sys.exit(0 if main(parsed_args) else 1)

@@ -2,81 +2,46 @@
 #
 # SPDX-License-Identifier: BSD-2-Clause
 
-import codecs
 import os
-from pathlib import Path
+import pathlib
 
 import setuptools
 
 
-# From https://packaging.python.org/en/latest/guides/single-sourcing-package-version/
-# (the first solution seemed a pretty sensible option for a non-namespaced package)
-def read(rel_path):
+def get_version():
     """
-    Read a file based on it's relatvie path.
+    Get a version string from environment variables, or the panthera package.
 
-    :param rel_path:
-    :return:
-    """
-    here = os.path.abspath(os.path.dirname(__file__))
-    with codecs.open(os.path.join(here, rel_path), "r") as fp:
-        return fp.read()
-
-
-def get_version(rel_path):
-    """
-    Get a version string looking object from a relative path
-
-    :param rel_path:
     :return:
     """
 
     if "RELEASE_VERSION" in os.environ:
         return os.environ["RELEASE_VERSION"]
 
-    for line in read(rel_path).splitlines():
-        if line.startswith("__version__"):
-            delim = '"' if '"' in line else "'"
-            return line.split(delim)[1]
-    else:
-        raise RuntimeError("Unable to find version string.")
+    import panthera
+
+    return panthera.__version__
 
 
 # Finding the right README.md and inheriting the mewbot licence
-current_file = Path(__file__)
-root_repo_dir = current_file.parents[2]
-assert root_repo_dir.exists()
+root_repo_dir = pathlib.Path(__file__).parent
 
-with open(current_file.parent.joinpath("README.md"), "r", encoding="utf-8") as rmf:
+with (root_repo_dir / "README.md").open("r", encoding="utf-8") as rmf:
     long_description = rmf.read()
 
-with open(current_file.parent.joinpath("requirements.txt"), "r", encoding="utf-8") as rf:
+with (root_repo_dir / "requirements.txt").open("r", encoding="utf-8") as rf:
     requirements = list(x for x in rf.read().splitlines(False) if x and not x.startswith("#"))
 
 # Reading the LICENSE file and parsing the results
 # LICENSE file should contain a symlink to the licence in the LICENSES folder
 # Held in the root of the repo
-
-with Path("LICENSE.md").open("r", encoding="utf-8") as license_file:
-    license_text = license_file.read()
-
-cand_full_license_path = Path(license_text.strip())
-
-# We have a symlink to the license - read it
-if cand_full_license_path.exists():
-    true_license_ident = os.path.splitext(license_text.split(r"/")[-1])[0]
-
-    with cand_full_license_path.open("r", encoding="utf-8") as true_license_file:
-        true_license_text = true_license_file.read()
-
+license_file = root_repo_dir / "LICENSE.md"
+if license_file.is_symlink():
+    license_identifier = license_file.readlink().stem
 else:
-    raise NotImplementedError(
-        f"Cannot programmatically determine license_ident from license. "
-        f"Link '{license_text}' may be invalid. "
-        "If you have added your own license in the LICENSE.md file, please move it to the "
-        "LICENSES folder in the root of the repo and replace the LICENSE.md file wih a symlink "
-        "to that resource."
-    )
+    with license_file.open("r", encoding="utf-8") as license_data:
+        license_file = root_repo_dir / license_data.read().strip()
+    license_identifier = license_file.stem
 
 # There are a number of bits of special sauce in this call
 # - You can fill it out manually - for your project
@@ -84,39 +49,54 @@ else:
 # - Or you can run "mewbot make_namespace_plugin" - and follow the onscreen instructions.
 #   Which should take care of most of the fiddly bits for you.
 setuptools.setup(
-    name="mewbot_dev_tools",
-    version=get_version("src/mewbot_dev_tools/__init__.py"),
-    author="Alex Cameron",
+    name="panthera",
+    version=get_version(),
+    python_requires=">=3.10",
     install_requires=requirements,
+
+    author="MewBot Org",
     author_email="mewbot@quicksilver.london",
-    description="Mewbot Developers Tools (https://github.com/mewbotorg)",
+    maintainer="MewBot Org",
+    maintainer_email="mewbot@quicksilver.london",
+
+    description="Panthera Python Developers Tools (https://github.com/mewbotorg/panthera)",
     long_description=long_description,
     long_description_content_type="text/markdown",
+
     url="https://github.com/mewler/mewbot",
     project_urls={
         "Bug Tracker": "https://github.com/mewler/mewbot/issues",
     },
-    license=true_license_text,
-    classifiers=[
-        "Programming Language :: Python :: 3",
-        # f"License :: OSI Approved :: {true_license_ident}",
-        # "Framework :: mewbot",
-        "Operating System :: OS Independent",
-    ],
+
+    license=license_identifier,
+    license_file=str(license_file.absolute()),
+
     package_dir={"": "src"},
     package_data={"": ["py.typed"]},
-    # packages=setuptools.find_namespace_packages(where="src", include=["mewbot.*"]),
     # see https://packaging.python.org/en/latest/specifications/entry-points/
     entry_points={
         "console_scripts": [
-            "mewbot-lint=mewbot_dev_tools.console_scripts.mewbot_lint:main",
-            "mewbot-reuse=mewbot_dev_tools.console_scripts.mewbot_reuse:main",
-            "mewbot-test=mewbot_dev_tools.console_scripts.mewbot_test:main",
-            "mewbot-security-analysis=mewbot_dev_tools.console_scripts.mewbot_security_analysis:main",
-            "mewbot-preflight=mewbot_dev_tools.console_scripts.mewbot_preflight:main",
-            "mewbot-install-deps=mewbot_dev_tools.console_scripts.mewbot_install_deps:main",
-            "mewbot-annotate=mewbot_dev_tools.console_scripts.mewbot_install_annotate:main",
+            "mewbot-lint=panthera.lint.__main__:main",
+            "mewbot-reuse=panthera.format.reuse:main",
+            "mewbot-test=panthera.test.__main__:main",
+            "mewbot-security-analysis=panthera.audit.__main__:main",
+            "mewbot-preflight=panthera.__main__:main",
+            "mewbot-install-deps=panthera.dev.install_deps:main",
+            "mewbot-annotate=panthera.annotation:main",
         ]
     },
-    python_requires=">=3.10",
+
+    classifiers=[
+        "Development Status :: 4 - Beta",
+        "Intended Audience :: Developers",
+
+        "Programming Language :: Python",
+        "Programming Language :: Python :: 3.10",
+        "Programming Language :: Python :: 3.11",
+        "Programming Language :: Python :: 3.12",
+        "Programming Language :: Python :: 3 :: Only",
+
+        f"License :: OSI Approved :: {license_identifier}",
+        "Operating System :: OS Independent",
+    ],
 )

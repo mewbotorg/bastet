@@ -4,10 +4,6 @@
 #
 # SPDX-License-Identifier: BSD-2-Clause
 
-
-# pylint: disable=import-outside-toplevel
-
-
 """
 Wrapper class for running linting tools.
 
@@ -28,9 +24,9 @@ import os
 import subprocess
 import sys
 
-from .path import gather_paths, gather_paths_standard_locs
-from .security_analysis import BanditMixin
-from .toolchain import Annotation
+from ..audit import BanditMixin
+from ..path import gather_paths, gather_paths_standard_locs
+from ..toolchain import Annotation
 
 LEVELS = frozenset({"notice", "warning", "error"})
 

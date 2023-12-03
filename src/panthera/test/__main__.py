@@ -3,12 +3,14 @@
 # SPDX-License-Identifier: BSD-2-Clause
 
 """
-Front end for the annotation script.
+Collects and runs all tests in the cwd.
 """
+
+from __future__ import annotations
 
 import os
 from functools import partial
 
-from ..annotate import main as annotate_main
+from ..test import main as mewbot_test
 
-main = partial(annotate_main, search_root=os.getcwd())
+main = partial(mewbot_test, search_root=os.getcwd())

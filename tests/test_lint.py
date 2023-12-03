@@ -5,13 +5,16 @@
 """
 Tests linting a document.
 """
+
+from __future__ import annotations
+
 import os
 import tempfile
 
 import pytest
 
-from mewbot_dev_tools.lint import LintOptions
-from mewbot_dev_tools.lint import main as lint_main
+from panthera.lint import LintOptions
+from panthera.lint import main as lint_main
 
 # pylint: disable = too-few-public-methods
 

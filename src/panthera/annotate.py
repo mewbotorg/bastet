@@ -144,4 +144,4 @@ def main(search_root: Optional[str] = None) -> None:
 
 
 if __name__ == "__main__":
-    main()
+    main(os.getcwd())
