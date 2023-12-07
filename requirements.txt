@@ -4,7 +4,7 @@
 
 
 # Installation toolchain
-setuptools~=69.2
+setuptools~=69.0.0
 
 # Copyright linting toolchain
 reuse~=2.1
