@@ -40,7 +40,7 @@ jobs:
           VERSION="$(git describe --tags)"          # <tag version>-<+n>-<hash>
           VERSION="${VERSION%-*}"                   # <tag version>-<+n>
           VERSION="${VERSION%-*}.dev${VERSION##*-}" # <tag version>.dev<+n>
-          printf "RELEASE_VERSION=%s\n" "$VERSION" >>"$GITHUB_ENV"
+          printf "%s\n" "$VERSION" >version
 
       - name: Build a binary wheel and a source tarball
         run: python -m build --sdist --wheel --outdir dist/

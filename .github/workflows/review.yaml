@@ -1,0 +1,109 @@
+# SPDX-FileCopyrightText: 2021 - 2023 Mewbot Developers <mewbot@quicksilver.london>
+#
+# SPDX-License-Identifier: BSD-2-Clause
+
+name: Auto-Review
+run-name: "Automated code review for \"${{ github.head_ref }}\""
+
+on:
+  push:
+    branches:
+      - mainline
+  pull_request: # All pull requests
+
+concurrency:
+  group: review-${{ github.head_ref }}
+  cancel-in-progress: true
+
+env:
+  # Which version of the reports Sonar receives.
+  DEFAULT_OS: ubuntu
+  DEFAULT_PYTHON: "3.10"
+
+jobs:
+  test:
+    name: Validate python code (${{ matrix.os }}/py${{ matrix.version }})
+    runs-on: ${{ matrix.os }}-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os: ["ubuntu", "macos", "windows"]
+        version: ["3.10", "3.11", "3.12"]
+        exclude:
+          - name: Lint
+            os: macos
+          - name: Lint
+            os: windows
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python ${{ matrix.version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.version }}
+          cache: pip
+          cache-dependency-path: requirements.txt
+
+      - name: Install panthera
+        shell: bash
+        run: pip install .
+
+      - name: Run panthera against panthers
+        shell: bash
+        run: panthera
+
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: review-${{ matrix.os }}-${{ matrix.version }}
+          path: reports
+
+  tests-passed:
+    name: Tests Passed
+    runs-on: ubuntu-latest
+
+    needs:
+      - test
+
+    steps:
+      - name: Mark all test runs as successful
+        run: /bin/true
+
+  sonarcloud:
+    name: SonarCloud
+    runs-on: ubuntu-latest
+
+    if: always()
+
+    needs:
+      - test
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download Artifacts
+        uses: actions/download-artifact@v4
+        if: always()
+        with:
+          name: lint-results-${{ env.DEFAULT_OS }}-${{ env.DEFAULT_PYTHON }}
+          path: reports
+
+      - name: Download Artifacts
+        uses: actions/download-artifact@v4
+        if: always()
+        with:
+          name: test-results-${{ env.DEFAULT_OS }}-${{ env.DEFAULT_PYTHON }}
+          path: reports
+
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarcloud-github-action@master
+        if: always()
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}

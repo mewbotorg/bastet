@@ -2,11 +2,15 @@
 #
 # SPDX-License-Identifier: CC0-1.0
 
+/version
+
 # Caching directories
 /.local/
 /.cache/
 __pycache__/
 .mypy_cache/
+.ruff_cache/
+.pytest_cache/
 
 # IDE and development environment
 venv/
@@ -30,5 +34,4 @@ examples/TrivialDiscordBot/secrets.json
 /.coverage.*
 /coverage/
 /reports/
-/.pytest_cache/
 /junit.xml

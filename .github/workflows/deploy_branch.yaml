@@ -30,9 +30,9 @@ jobs:
         run: pip install build --user
 
       - name: Build a binary wheel and a source tarball
-        run: python -m build --sdist --wheel --outdir dist/
-        env:
-          RELEASE_VERSION: "0.dev${{ github.run_id }}"
+        run: |
+          printf "%s\n" "0.dev${{ github.run_id }}" >version
+          python -m build --sdist --wheel --outdir dist/
 
       - name: Archive installation artifacts
         uses: actions/upload-artifact@v3

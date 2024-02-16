@@ -16,101 +16,42 @@ The aim is to make sure the code is fully tested and ready to be submitted to gi
 All tools which should be run before submission will be run.
 This script is intended to be run locally.
 """
-from __future__ import annotations
 
-from typing import Optional
+from __future__ import annotations as _future_annotations
 
+import argparse
+import asyncio
+import logging
 import os
 
-from .format.reuse import ReuseToolchain
-from .lint import LintToolchain
-from .path import gather_paths
-from .terminal import CommandDelimiter
-from .test import TestToolchain
-from .toolchain import Annotation, ToolChain
+from . import AnnotationReporter, ReportHandler, ToolRunner
+from .config import PantheraConfiguration
 
 
-class PreflightToolChain(ToolChain):
+def main() -> None:
     """
-    Class to run the tools in sequence.
+    Run a full panthera run.
     """
 
-    def __init__(self, search_root: Optional[str] = None) -> None:
-        """
-        Starts up the class.
-        """
+    # Windows hack to allow colour printing in the terminal
+    # See https://bugs.python.org/issue30075.
+    if os.name == "nt":
+        os.system("")  # noqa: S605 S607 # nosec: B605 B607
 
-        self.search_root = os.curdir if search_root is None else search_root
+    logging.basicConfig(level=logging.WARNING)
+    logger = logging.getLogger("panthera")
+    logger.setLevel(logging.WARNING)
 
-        super().__init__(self.search_root, in_ci=False, search_root=search_root)
+    parser = argparse.ArgumentParser()
+    PantheraConfiguration.add_options(parser)
+    config = PantheraConfiguration(logger, parser.parse_args())
 
-    def run(self) -> list[Annotation]:
-        """
-        Run all needed tools in sequence.
+    # TODO: Load this from config
+    reporter = ReportHandler(logger, AnnotationReporter())
 
-        Reuse - Will be run against the current position.
-        :return:
-        """
-
-        self.run_reuse()
-        self.run_lint()
-        self.run_test()
-
-        return []
-
-    def run_reuse(self) -> None:
-        """
-        Run the reuse tool and store the result.
-
-        :return:
-        """
-        with CommandDelimiter("Starting reuse run", False):
-            reuse_tool = ReuseToolchain(
-                *self.folders, in_ci=self.in_ci, search_root=self.search_root
-            )
-
-            for _ in reuse_tool.run():
-                ...
-
-            self.run_success.update(reuse_tool.run_success)
-
-    def run_lint(self) -> None:
-        """
-        Run the lint toolchain and store the result.
-
-        :return:
-        """
-        with CommandDelimiter("Starting linting run", False):
-            target_paths = gather_paths("src", "tests")
-            linter = LintToolchain(*target_paths, in_ci=False, search_root=self.search_root)
-
-            for _ in linter.run():
-                ...
-
-            self.run_success.update(linter.run_success)
-
-    def run_test(self) -> None:
-        """Run the test suite - store the results."""
-        with CommandDelimiter("Starting testing run", False):
-            paths = list(gather_paths("tests"))
-            tester = TestToolchain(*paths, in_ci=False, search_root=self.search_root)
-
-            for _ in tester.run():
-                ...
-
-            self.run_success.update(tester.run_success)
-
-
-def main(search_root: Optional[str] = None) -> None:
-    """
-    Run the main security analysis program(s).
-
-    :param search_root:
-    :return:
-    """
-    preflight_toolchain = PreflightToolChain(search_root=search_root)
-    preflight_toolchain()
+    runner = ToolRunner(reporter, config)
+    asyncio.run(runner(config.domains))
 
 
 if __name__ == "__main__":
-    main(os.getcwd())
+    main()

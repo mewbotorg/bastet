@@ -4,9 +4,9 @@ SPDX-FileCopyrightText: 2023 Mewbot Developers <mewbot@quicksilver.london>
 SPDX-License-Identifier: BSD-2-Clause
 -->
 
-# mewbot-dev-tools
+# Panthera
 
-Tools to aid with mewbot development.
+TODO: Writing description.
 
 ## Purpose
 
@@ -30,7 +30,7 @@ If your project is in that `src-dir` layout, you can install the dev tools
 and then run any of the toolchains.
 
 ```sh
-pip install mewbot-dev-tools
+pip install panthera
 
 mewbot-install-deps  # Install dependencies from discovered requirements.txt
 

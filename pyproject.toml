@@ -1,27 +1,143 @@
-# Python project info
-
 # SPDX-FileCopyrightText: 2021 - 2023 Mewbot Developers <mewbot@quicksilver.london>
 #
 # SPDX-License-Identifier: CC0-1.0
+
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "panthera"
+description="Panthera Python Developers Tools (https://github.com/mewbotorg/panthera)"
+#url="https://github.com/mewler/mewbot"
+authors = [{name = "MewBot Org", email="mewbot@quicksilver.london" }]
+maintainers = [{name = "MewBot Org", email="mewbot@quicksilver.london" }]
+
+requires-python = ">=3.11"
+
+classifiers=[
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3 :: Only",
+    "Operating System :: OS Independent",
+]
+
+dynamic = ["version", "readme"]
+
+# Terminal colouring and formatting
+dependencies = [
+    # Output Libraries
+    "clint~=0.5.1",
+    "gitignore-parser~=0.1.11",
+
+    # Copyright linting toolchain
+    "reuse~=2.1",
+
+    # Documentation toolchain
+    "pydeps~=1.12.1",
+    "myst-parser~=2.0.0",
+    "sphinx~=7.2.2",
+    "m2r2~=0.3.3.post2",
+
+    # Python Linting toolchain
+    "black>=23.1.0",
+    "flake8>=6.0.0",
+    "pylint>=2.16.0",
+    "pydocstyle>=6.3.0",
+    "isort>=5.12.0",
+    "ruff>=0.2.1",
+    "mypy>=0.991",
+
+    # Security Audit toolchain
+    "bandit~=1.7.5",
+
+    # Testing toolchain
+    "pytest>=7.1.1",
+    "pytest-asyncio~=0.21.1",
+    "pytest-cov>=3.0.0",
+    "pytest-xdist>=2.5.0",
+]
+
+[project.scripts]
+panthera = "panthera.__main__:main"
+panthera-lint = "panthera.lint.__main__:main"
+panthera-format = "panthera.format.__main__:main"
+panthera-test = "panthera.test.__main__:main"
+panthera-audit = "panthera.audit.__main__:main"
+
+[tool.panthera]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.dynamic.version]
+file = "version"
+
+[tool.setuptools.dynamic.readme]
+content-type = "text/markdown"
+file = "READMD.md"
 
 [tool.black]
 
 line-length = 94
 
 [tool.ruff]
+line-length = 94
+target-version = "py311"
 
-line-length = 100
+[tool.ruff.lint]
 
-[tool.pylint."MASTER"]
+select = ["ALL"]
+ignore = [
+    "D200",  # Single line doc strings do not need to fit on a single line in code.
+    "D203",  # Zero blank lines before docstring.
+    "D202",  # One blank line after docstring.
+    "D212",  # Multi-line docstring summary should start at the second line.
+    "D401",  # Docs strings do not have to be in the imperative mood.
 
-persistent = "yes"
-unsafe-load-any-extension = "no"
+    "ANN101", "ANN102", # Don't require type annotations for 'self' and 'cls'
 
-jobs=1
+    "TCH001", "TCH002", "TCH003",  # Don't use if TYPE_CHECKING: blocks.
 
-[tool.pylint."MESSAGES CONTROL"]
+    "TD002",  # to-do comments do not require an author note.
+    "TD003",  # to-do comments do not require issue links.
 
-disable=[]
+    "EXE001",  # Allow shebang in files without executable bit.
+
+    "EM101",  # Exceptions can use string literals
+
+    "FIX002",  # TODO: remove this -- this suppresses TODOs
+    "D102", "D107", "D101", "D105", "D100", "D103",  # TODO: remove -- supresses pydocstyle
+]
+
+[tool.ruff.lint.isort]
+
+# Section ordering
+section-order = ['future', 'typing', "standard-library", "third-party", "first-party", "local-folder"]
+sections = {"typing" = ["typing", "types", "typing_extensions", "collections.abc"]}
+
+[tool.isort]
+profile = "black"
+py_version = 311
+
+# Section ordering
+sections = ['FUTURE', 'TYPING', 'STDLIB', 'THIRDPARTY', 'FIRSTPARTY', 'LOCALFOLDER']
+known_typing = ["typing", "types", "typing_extensions", "collections.abc"]
+
+# Always have deferred annotation processing. We rename it so we can use 'annotations' as a name.
+add_imports = ["from __future__ import annotations as _future_annotations"]
+
+# 9 is black compatible, but does not look great
+multi_line_output = 3
+
+[tool.flake8]
+
+max-complexity = 8
+max-line-length = 100
 
 [tool.pydocstyle]
 
@@ -37,19 +153,6 @@ relative_files=true
 source=["src"]
 dynamic_context = "test_function"
 
-[tool.coverage.report]
-
-fail_under=40.0
-
 [tool.coverage.html]
 
 show_contexts=true
-
-[tool.isort]
-profile = "black"
-py_version=310
-sections = ['FUTURE', 'TYPING', 'STDLIB', 'THIRDPARTY', 'FIRSTPARTY', 'LOCALFOLDER']
-known_typing = ["typing", "types", "collections.abc"]
-add_imports = ["from __future__ import annotations"]
-# 9 is black compatible, but does not look great
-multi_line_output = 3
