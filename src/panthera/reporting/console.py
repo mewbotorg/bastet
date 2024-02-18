@@ -274,8 +274,9 @@ class _GitHubReporter(ReportInstance):
         self.tool = tool
 
     async def start(self) -> ReportStreams:
-        sys.stdout.write(f"::group::{self.tool.domain.name} : {self.tool.name}\n")
+        sys.stdout.write(f"::group::{self.tool.domain} : {self.tool.name}\n")
         sys.stdout.write(f"Running {self.tool.name}\n")
+        sys.stdout.flush()
 
         return ReportStreams(sys.stdout.buffer, sys.stderr.buffer, None, None)
 

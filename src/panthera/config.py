@@ -16,7 +16,7 @@ from pathlib import Path
 
 import gitignore_parser  # type: ignore[import-untyped]
 
-from .reporting import AnnotationReporter, Reporter
+from .reporting import Reporter, reporters
 from .tools.tool import PathRepo, ToolDomain
 
 PYPROJECT_NAME = "pyproject.toml"
@@ -36,22 +36,23 @@ class PantheraConfiguration:
         parser.add_argument(
             "--skip",
             nargs=argparse.ZERO_OR_MORE,
-            help="Names of tools and domains to skip.",
+            help="Names of tools and domains to skip (in extension to configured 'disable').",
         )
         parser.add_argument(
             "--disable",
             nargs=argparse.ZERO_OR_MORE,
-            help="Names of tools and domains to disable.",
+            help="Names of tools and domains to disable (overrides config).",
         )
         parser.add_argument(
             "--exclude",
             nargs=argparse.ZERO_OR_MORE,
-            help="Folder names to exclude from discovery.",
+            help="Folder names to exclude from discovery (gitignore format).",
         )
         parser.add_argument(
             "--reporter",
             nargs=argparse.ZERO_OR_MORE,
             help="Class name of a reporter tool to use.",
+            choices=reporters.keys(),
         )
         parser.add_argument(
             "folders",
@@ -84,19 +85,28 @@ class PantheraConfiguration:
 
         self.config = _load_config(logger, self.root_dir)
 
-        pypath_filter = set(self._config_list("sources", ["src", "test"]))
+        pypath_filter = set(self._config_list("sources", ["src", "tests"]))
         logger.debug("PYTHON_PATH selector set to %s", pypath_filter)
 
-        coverage_filter = set(self._config_list("coverage_ignore", ["test"]))
-        logger.debug("PYTHON_PATH coverage ignore selector set to %s", coverage_filter)
+        self.reporters = set()
+        for reporter in args.reporter or self._config_list("reporters", ["note"]):
+            if reporter.lower() not in reporters:
+                logger.warning("Unknown reporter class %s", reporter)
+                continue
+            self.reporters.add(reporters[reporter])
+        logger.debug("Reporters set to %s")
 
-        self.folders = PathGatherer(logger, self.root_dir).gather(
-            pypath_filter,
-            coverage_filter,
-        )
+        disabled = args.disable or self._config_list("disable", [])
+        disabled += args.skip or []
+        self.skip_domains, self.skip_tools = self._tools_or_domains(disabled)
+        logger.debug("disabled domains: %s", self.skip_domains)
+        logger.debug("disabled tools: %s", self.skip_tools)
 
-        self.reporters = {AnnotationReporter}
-        self.skip_tools, self.skip_domains = set()
+        exclude = args.exclude or self._config_list("exclude", [])
+        logger.debug("exclusion list set to %s", exclude)
+
+        folders = PathGatherer(logger, self.root_dir)
+        self.folders = folders.gather(exclude, pypath_filter)
 
     def _tools_or_domains(self, items: Iterable[str]) -> tuple[set[ToolDomain], set[str]]:
         domains = set()
@@ -104,11 +114,13 @@ class PantheraConfiguration:
 
         _domains = {domain.lower(): domain for domain in ToolDomain}
 
-        for item in items:
-            if item.lower() in _domains:
-                domains.add()
-            if item in ToolDomain:
-                pass
+        for _item in items:
+            item = _item.lower()
+
+            if item in _domains:
+                domains.add(_domains[item])
+            else:
+                tools.add(item)
 
         return domains, tools
 
@@ -127,7 +139,7 @@ class PantheraConfiguration:
 
     @property
     def domains(self) -> list[ToolDomain]:
-        return [ToolDomain.FORMAT, ToolDomain.LINT, ToolDomain.AUDIT]
+        return [domain for domain in ToolDomain if domain not in self.skip_domains]
 
 
 class PathGatherer:
@@ -151,7 +163,7 @@ class PathGatherer:
         self._python_module_path = set()
         self._python_files = set()
 
-    def gather(self, pypath_selector: set[str], coverage_exclude: set[str]) -> PathRepo:
+    def gather(self, exclude: list[str], pypath_selector: set[str]) -> PathRepo:
         self._potential_py_path = self._initial_path()
         self._initial_py_path = frozenset(self._potential_py_path)
         self._python_path = set()
@@ -161,6 +173,10 @@ class PathGatherer:
         self.logger.debug("Adding '.git' and '.hg' to gitignore list")
         _ignores = [lambda path: path.name in [".git", ".hg"]]
 
+        for rule in exclude:
+            self.logger.debug("Adding %s to gitignore list", rule)
+            _ignores.append(gitignore_parser.rule_from_pattern(rule, self.root, "config"))
+
         local_ignores = self.root / ".git" / "info" / "exclude"
         if local_ignores.exists():
             self.logger.debug("Adding %s to gitignore list", local_ignores)
@@ -168,18 +184,12 @@ class PathGatherer:
 
         self._scan_dir(self.root, _ignores)
 
-        coverage_path = {
-            path for path in self._python_path if path.name not in coverage_exclude
-        }
-
         self.logger.debug("PYTHON_PATH:      %s", self._python_path)
-        self.logger.debug("Coverage targets: %s", coverage_path)
         self.logger.debug("Module Roots:     %s", self._python_module_path)
 
         return PathRepo(
             self.root,
             self._python_path,
-            coverage_path,
             self._python_files,
             self._python_module_path,
         )
@@ -340,7 +350,7 @@ def main() -> None:
     pypath_filter = set(config.get("sources", ["src", "tests"]))
     logger.debug("PYTHON_PATH selector set to %s", pypath_filter)
 
-    folders = PathGatherer(logger, root).gather(pypath_filter, set())
+    folders = PathGatherer(logger, root).gather([], pypath_filter)
     sorted_folders = sorted(map(str, folders.python_path), key=len, reverse=True)
 
     sys.stdout.write(os.pathsep.join(sorted_folders))

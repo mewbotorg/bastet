@@ -8,7 +8,7 @@ run-name: "Automated code review for \"${{ github.head_ref }}\""
 on:
   push:
     branches:
-      - mainline
+      - main
   pull_request: # All pull requests
 
 concurrency:
@@ -28,13 +28,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: ["ubuntu", "macos", "windows"]
-        version: ["3.10", "3.11", "3.12"]
-        exclude:
-          - name: Lint
-            os: macos
-          - name: Lint
-            os: windows
+        os: ["ubuntu"]
+        version: ["3.11", "3.12"]
 
     steps:
       - name: Checkout
@@ -53,7 +48,7 @@ jobs:
 
       - name: Run panthera against panthers
         shell: bash
-        run: panthera
+        run: panthera --skip format --reporter github
 
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4

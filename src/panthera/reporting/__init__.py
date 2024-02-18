@@ -14,7 +14,15 @@ from __future__ import annotations as _future_annotations
 from .abc import Reporter, ReportHandler
 from .console import AnnotationReporter, ConsoleReporter, GitHubReporter
 
+reporters: dict[str, type[Reporter]] = {
+    "console": ConsoleReporter,
+    "github": GitHubReporter,
+    "note": AnnotationReporter,
+}
+
+
 __all__ = [
+    "reporters",
     "ReportHandler",
     "ConsoleReporter",
     "GitHubReporter",

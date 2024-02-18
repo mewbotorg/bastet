@@ -352,20 +352,17 @@ class Annotation:
 class PathRepo:
     root_path: pathlib.Path
     python_path: frozenset[pathlib.Path]
-    coverage_path: frozenset[pathlib.Path]
     python_files: frozenset[pathlib.Path]
     python_module_path: frozenset[pathlib.Path]
 
-    def __init__(  # noqa: PLR0913
+    def __init__(
         self,
         root_path: pathlib.Path,
         python_path: set[pathlib.Path],
-        coverage_path: set[pathlib.Path],
         python_files: set[pathlib.Path],
         python_module_path: set[pathlib.Path],
     ) -> None:
         self.root_path = root_path
         self.python_path = frozenset(python_path)
-        self.coverage_path = frozenset(coverage_path)
         self.python_files = frozenset(python_files)
         self.python_module_path = frozenset(python_module_path)

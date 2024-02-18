@@ -65,7 +65,7 @@ class ToolRunner:
         return [
             tool(domain, config.folders)
             for tool in get_available_tools()
-            if tool.__name__ not in config.skip_tools and domain in tool.domains()
+            if tool.__name__.lower() not in config.skip_tools and domain in tool.domains()
         ]
 
     async def run(
@@ -121,7 +121,7 @@ class ToolRunner:
                 # Seems not to be
                 await process.wait()
             # Re-raise all non-timeout exceptions.
-            except:  # flake8:
+            except Exception:
                 process.kill()
                 await process.wait()
                 raise

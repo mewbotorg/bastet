@@ -24,7 +24,7 @@ import asyncio
 import logging
 import os
 
-from . import AnnotationReporter, ReportHandler, ToolRunner
+from . import ReportHandler, ToolRunner
 from .config import PantheraConfiguration
 
 
@@ -46,8 +46,7 @@ def main() -> None:
     PantheraConfiguration.add_options(parser)
     config = PantheraConfiguration(logger, parser.parse_args())
 
-    # TODO: Load this from config
-    reporter = ReportHandler(logger, AnnotationReporter())
+    reporter = ReportHandler(logger, *[reporter() for reporter in config.reporters])
 
     runner = ToolRunner(reporter, config)
     asyncio.run(runner(config.domains))
