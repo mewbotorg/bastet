@@ -34,7 +34,7 @@ class GitHubReporter(Reporter):
         for issue in sorted(issues):
             description = (issue.description or "").replace("\n", "%0A")
             sys.stdout.write(
-                f"::{issue.status} file={issue.filename},line={issue.source[1]},"
+                f"::error file={issue.filename},line={issue.source[1]},"
                 f"col={issue.source[2]},title={issue.message}::{description}\n",
             )
         sys.stdout.write("::endgroup::\n")

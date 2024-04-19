@@ -381,6 +381,7 @@ class Annotation:
             add_diff_line method.
         """
 
+        self.tool = None
         self.status = status
         self.source = self._normalise_source(source)
         self.code = code.strip()
