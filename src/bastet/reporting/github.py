@@ -82,7 +82,10 @@ class GitHubReporter(Reporter):
         This line can then be placed into an aggregate annotation.
         """
 
-        header = f"- {issue.tool.name} [{issue.code}] {issue.message}"
+        if issue.tool:
+            header = f"- {issue.tool.name} [{issue.code}] {issue.message}"
+        else:
+            header = f"- {issue.message}"
 
         if not issue.description:
             return header

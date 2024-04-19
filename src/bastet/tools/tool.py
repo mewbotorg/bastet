@@ -346,7 +346,7 @@ class Annotation:
 
     status: Status
     source: tuple[pathlib.Path, int, int]
-    tool: Tool
+    tool: Tool | None
     code: str
 
     message: str

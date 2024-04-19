@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: BSD-2-Clause
 
 name: Auto-Review
-run-name: "Automated code review for \"${{ github.head_ref }}\""
+run-name: "Automated code review for \"${{ github.ref }}\""
 
 on:
   push:
@@ -12,7 +12,7 @@ on:
   pull_request: # All pull requests
 
 concurrency:
-  group: review-${{ github.head_ref }}
+  group: review-${{ github.ref }}
   cancel-in-progress: true
 
 env:
@@ -29,7 +29,7 @@ jobs:
       fail-fast: false
       matrix:
         os: ["ubuntu"]
-        version: ["3.11", "3.12", "3.13"]
+        version: ["3.11", "3.12"]
 
     steps:
       - name: Checkout
