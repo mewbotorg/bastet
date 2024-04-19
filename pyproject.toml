@@ -12,6 +12,7 @@ description="Bastet Python Developers Tools (https://github.com/mewbotorg/bastet
 dynamic = ["version"]
 
 readme = {file = "README.md", content-type = "text/markdown"}
+license = {file = "BSD-2-Clause"}
 
 urls = {"Source" = "https://github.com/mewbotorg/bastet"}
 authors = [{name = "MewBot Org", email="mewbot@quicksilver.london" }]
@@ -28,6 +29,7 @@ classifiers=[
     "Programming Language :: Python :: 3.13",
     "Programming Language :: Python :: 3 :: Only",
     "Operating System :: OS Independent",
+    "License :: OSI Approved :: BSD 2 Clause",
 ]
 
 # Terminal colouring and formatting
