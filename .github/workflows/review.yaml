@@ -44,11 +44,15 @@ jobs:
 
       - name: Install bastet
         shell: bash
-        run: pip install .
+        run: pip install .[dev]
 
       - name: Run bastet against bastet
         shell: bash
-        run: bastet --skip format --reporter github
+        run: bastet --skip format --reporter github sonar
+
+      - name: Run bastet's internal tests
+        shell: bash
+        run: pytest --junit-xml=reports/junit-test.xml --cov-report=xml:reports/coverage.xml
 
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
@@ -86,7 +90,7 @@ jobs:
         uses: actions/download-artifact@v4
         if: always()
         with:
-          name: lint-results-${{ env.DEFAULT_OS }}-${{ env.DEFAULT_PYTHON }}
+          name: review-${{ env.DEFAULT_OS }}-${{ env.DEFAULT_PYTHON }}
           path: reports
 
       - name: SonarCloud Scan

@@ -14,10 +14,12 @@ from __future__ import annotations as _future_annotations
 from .abc import Reporter, ReportHandler
 from .console import AnnotationReporter
 from .github import GitHubReporter
+from .sonar import Sonar
 
 reporters: dict[str, type[Reporter]] = {
     "github": GitHubReporter,
     "note": AnnotationReporter,
+    "sonar": Sonar,
 }
 
 

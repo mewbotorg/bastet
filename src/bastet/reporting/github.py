@@ -2,7 +2,6 @@
 #
 # SPDX-License-Identifier: BSD-2-Clause
 
-from __future__ import annotations as _f_annotations
 from __future__ import annotations as _future_annotations
 
 from collections.abc import Iterable
