@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: BSD-2-Clause
 
 """
-Reporting subsystem for Panthera.
+Reporting subsystem for Bastet.
 
 Reporters take the output from Tools (status, annotations, and exceptions)
 and generate reports for machine or human consumption.
@@ -12,10 +12,10 @@ and generate reports for machine or human consumption.
 from __future__ import annotations as _future_annotations
 
 from .abc import Reporter, ReportHandler
-from .console import AnnotationReporter, ConsoleReporter, GitHubReporter
+from .console import AnnotationReporter
+from .github import GitHubReporter
 
 reporters: dict[str, type[Reporter]] = {
-    "console": ConsoleReporter,
     "github": GitHubReporter,
     "note": AnnotationReporter,
 }
@@ -24,7 +24,6 @@ reporters: dict[str, type[Reporter]] = {
 __all__ = [
     "reporters",
     "ReportHandler",
-    "ConsoleReporter",
     "GitHubReporter",
     "AnnotationReporter",
     "Reporter",

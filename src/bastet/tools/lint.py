@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 # SPDX-FileCopyrightText: 2021 - 2023 Mewbot Developers <mewbot@quicksilver.london>
 #
 # SPDX-License-Identifier: BSD-2-Clause
@@ -39,7 +37,7 @@ class _PylintOutputMixin(Tool, abc.ABC):
             if line.startswith("[Errno"):
                 code, _, error = line.partition("] ")
                 code = code.strip("[]")
-                yield Annotation(Status.ERROR, None, code, error)
+                yield Annotation(Status.EXCEPTION, None, code, error)
                 continue
 
             if line.startswith(("*" * 10, "-" * 10, "Your code has been rated")):
@@ -67,7 +65,7 @@ class _PylintOutputMixin(Tool, abc.ABC):
             code, _, error = error.strip().partition(" ")
             code = code.strip(":")
 
-            self._annotation = Annotation(Status.FAILED, source, code, error)
+            self._annotation = Annotation(Status.ISSUE, source, code, error)
         except ValueError as e:
             return OutputParsingError(data=line, cause=e)
         else:
@@ -85,15 +83,29 @@ class Flake8(_PylintOutputMixin, Tool):
 
     @classmethod
     def domains(cls) -> set[ToolDomain]:
+        """
+        flake8 python code linting.
+        """
         return {ToolDomain.LINT}
 
     def get_command(self) -> list[str | pathlib.Path]:
+        """
+        Command string to execute (including arguments).
+        """
         return ["flake8", *self._paths.python_path]
 
     def get_environment(self) -> dict[str, str]:
+        """
+        Environment variables to set when calling this tool.
+        """
         return {}
 
     def acceptable_exit_codes(self) -> set[int]:
+        """
+        Status codes from the command that indicate the tool succeeded.
+
+        flake8 uses status code 1 whilst linting to indicate tests did not pass.
+        """
         return {0, 1}
 
 
@@ -107,9 +119,19 @@ class MyPy(Tool):
 
     @classmethod
     def domains(cls) -> set[ToolDomain]:
+        """
+        MyPy: type hint linting and static analysis.
+        """
         return {ToolDomain.LINT}
 
     def get_command(self) -> list[str | pathlib.Path]:
+        """
+        Command string to execute (including arguments).
+
+        In order to handle namespace packages, we pass MyPy the list
+        of concrete module paths, and set MYPYPATH environment variable.
+        See the get_environment function for more details.
+        """
         return [
             "mypy",
             "--strict",
@@ -118,19 +140,29 @@ class MyPy(Tool):
         ]
 
     def get_environment(self) -> dict[str, str]:
-        # MyPy does not use the stock import engine for doing its analysis,
-        # so we have to give it additional hints about how the namespace package
-        # structure works.
-        # See https://mypy.readthedocs.io/en/stable/running_mypy.html#mapping-file-paths-to-modules
-        #
-        # There are two steps to this:
-        #  - We set MYPYPATH equivalent to PYTHONPATH
+        """
+        Environment variables for MyPy.
+
+        MyPy does not use the stock import engine for doing its analysis,
+        so we have to give it additional hints about how the namespace package
+        structure works.
+        See https://mypy.readthedocs.io/en/stable/running_mypy.html#mapping-file-paths-to-modules
+
+        There are two steps to this:
+          - We pass the set of concrete module paths to mypy's command line.
+          - We set MYPYPATH equivalent to PYTHONPATH
+        """
 
         return {
             "MYPYPATH": os.pathsep.join(map(str, self._paths.python_path)),
         }
 
     def acceptable_exit_codes(self) -> set[int]:
+        """
+        Status codes from the command that indicate the tool succeeded.
+
+        mypy uses status code 1 whilst linting to indicate tests did not pass.
+        """
         return {0, 1}
 
     async def process_results(
@@ -168,7 +200,7 @@ class MyPy(Tool):
                 error, _, code = error.rpartition("  ")
                 code = code.strip("[]")
 
-                last_annotation = Annotation(Status.FAILED, source, code, error)
+                last_annotation = Annotation(Status.ISSUE, source, code, error)
             except ValueError as e:
                 yield OutputParsingError("Unable to read file/line number", line, e)
 
@@ -187,12 +219,21 @@ class PyLint(_PylintOutputMixin, Tool):
 
     @classmethod
     def domains(cls) -> set[ToolDomain]:
+        """
+        Pylint: General linting for the official python style guide.
+        """
         return {ToolDomain.LINT}
 
     def get_command(self) -> list[str | pathlib.Path]:
+        """
+        Command string to execute (including arguments).
+        """
         return ["pylint", *self._paths.python_path]
 
     def get_environment(self) -> dict[str, str]:
+        """
+        Environment variables to set when calling this tool.
+        """
         return {}
 
 
@@ -207,18 +248,37 @@ class PyDocStyle(Tool):
 
     @classmethod
     def domains(cls) -> set[ToolDomain]:
+        """
+        PyDocStyle: linting for doc strings (like this one).
+        """
         return {ToolDomain.LINT}
 
     def get_command(self) -> list[str | pathlib.Path]:
-        return ["pydocstyle", *self._paths.python_files]
+        """
+        Command string to execute (including arguments).
+        """
+        return ["pydocstyle", *self._paths.python_path]
 
     def get_environment(self) -> dict[str, str]:
+        """
+        Environment variables to set when calling this tool.
+        """
         return {}
 
     async def process_results(
         self,
         data: asyncio.StreamReader,
     ) -> AsyncIterable[Annotation | ToolError]:
+        """
+        Process the standard output of pydocstyle, and output annotations.
+
+        The pydocstyle format is:
+        ```
+        src/bastet/tools/tool.py:37 in public method `__lt__`:
+                D105: Missing docstring in magic method
+        ```
+        """
+
         while not data.at_eof():
             header = (await data.readline()).decode("utf-8")
 
@@ -233,7 +293,7 @@ class PyDocStyle(Tool):
                 error = (await data.readline()).decode("utf-8").strip()
                 code, _, error = error.partition(": ")
 
-                yield Annotation(Status.FAILED, source, code, error)
+                yield Annotation(Status.ISSUE, source, code, error)
             except ValueError as e:
                 yield OutputParsingError(cause=e)
             except StopIteration:

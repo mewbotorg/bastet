@@ -9,7 +9,7 @@ import os
 import pathlib
 import subprocess  # nosec
 
-from .config import PantheraConfiguration
+from .config import BastetConfiguration
 from .reporting import ReportHandler
 from .tools import (
     Annotation,
@@ -22,68 +22,53 @@ from .tools import (
 
 
 class ToolRunner:
-    """
-    Support class for running a series of tools across the codebase.
-
-    Each tool will be given the same set of folders, and can produce output
-    to the console and/or 'annotations' indicating issues with the code.
-
-    The behaviour of this class alters based whether it is being run in 'CI mode'.
-    This mode disables all interactive and automated features of the toolchain,
-    and instead outputs the state through a series of 'annotations', each one
-    representing an issue the tools found.
-    """
-
     reporter: ReportHandler
-    config: PantheraConfiguration
+    config: BastetConfiguration
     timeout: int = 30
 
-    def __init__(self, reporter: ReportHandler, config: PantheraConfiguration) -> None:
+    def __init__(self, reporter: ReportHandler, config: BastetConfiguration) -> None:
         self.reporter = reporter
         self.config = config
 
-    async def __call__(self, domains: list[ToolDomain]) -> ToolResults:
+    async def run(self) -> ToolResults:
+        """
+        Run the tool chain, calling each selected tool and processing the results.
+
+        This function will iterate through the selected domains
+        """
+
         # Ensure the reporting location exists.
-        pathlib.Path("reports").mkdir(parents=True, exist_ok=True)
+        self.config.reports.mkdir(parents=True, exist_ok=True)
 
         results = ToolResults()
 
+        domain: ToolDomain
         async with self.reporter:
-            for domain in domains:
-                tools = self.gather_tools(domain, self.config)
+            for domain in gather_domains(self.config):
+                tools = gather_tools(domain, self.config)
 
                 for tool in tools:
-                    command, exit_code, annotations, exceptions = await self.run(tool)
+                    command, exit_code, annotations, exceptions = await self._run_tool(tool)
                     await results.record(tool, annotations, exceptions, exit_code)
 
         await self.reporter.summarise(results)
 
         return results
 
-    @staticmethod
-    def gather_tools(domain: ToolDomain, config: PantheraConfiguration) -> list[Tool]:
-        return [
-            tool(domain, config.folders)
-            for tool in get_available_tools()
-            if tool.__name__.lower() not in config.skip_tools and domain in tool.domains()
-        ]
-
-    async def run(
+    async def _run_tool(
         self,
         tool: Tool,
     ) -> tuple[list[str | pathlib.Path], int, list[Annotation], list[ToolError]]:
         """
         Helper function to run an external program as a check.
 
-        The output of the command is made available in three different ways:
-          - Output is written to reports/{tool name}.txt
-          - Output and Error are returned to the caller
-          - Error and Output are copied to the terminal.
+        The output of the tool is copied to the tool's own process_results
+        function, and to all reporters that request it. The reports can
+        also request the standard error stream, and/or the annotations being
+        produced by the process_results function.
 
-        When in CI mode, we add a group header to collapse the output from each
-        tool for ease of reading.
-
-        :param tool: The tool definition to rune
+        :param tool:
+            The tool definition to run.
         """
 
         # In some edge cases, like configuring pytest, the reporting toolchain
@@ -91,11 +76,10 @@ class ToolRunner:
         # fetching the command.
         reporter = await self.reporter.report(tool)
 
-        env = tool.get_environment()
         command = tool.get_command()
 
-        env = env.copy()
-        env.update(os.environ)  # TODO: this is the wrong way around
+        env = os.environ.copy()
+        env.update(tool.get_environment())
 
         process = await asyncio.create_subprocess_exec(
             *command,
@@ -130,6 +114,35 @@ class ToolRunner:
         return_code = return_code if return_code is not None else 1
 
         return command, return_code, reporter.annotations, reporter.exceptions
+
+
+def gather_domains(config: BastetConfiguration) -> list[ToolDomain]:
+    """
+    Select all Domains we are going to run in this Bastet run.
+    """
+    return [d for d in ToolDomain if d not in config.skip_domains]
+
+
+def gather_tools(domain: ToolDomain, config: BastetConfiguration) -> list[Tool]:
+    """
+    Select all Tools we are going to run in this Bastet run.
+
+    This works by:
+     - Finding all available tools on the system.
+     - Checking which are used for the selected domain.
+     - Removing any disabled by the configuration.
+
+    :param domain:
+        The tool domain to select tools for.
+    :param config:
+        The configuration options for this bastet run.
+    """
+
+    return [
+        tool(domain, config.folders)
+        for tool in get_available_tools()
+        if tool.__name__.lower() not in config.skip_tools and domain in tool.domains()
+    ]
 
 
 __all__ = ["ReportHandler", "ToolRunner"]

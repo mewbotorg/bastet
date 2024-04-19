@@ -21,49 +21,38 @@ from .tool import Annotation, Status, Tool, ToolDomain
 _COPYRIGHT_FILE = pathlib.Path("copyright.json")
 _LICENSE_DIR = pathlib.Path("LICENSES")
 
-_MISSING_CONFIG = Annotation(
-    Status.FAILED,
-    (_COPYRIGHT_FILE, None, None),
-    "no-config",
-    "Missing copyright.json",
-    "copyright.json should exist in root dir with a copyright and license field.",
-)
-_MISSING_RIGHT = Annotation(
-    Status.FAILED,
-    (_COPYRIGHT_FILE, None, None),
-    "no-copyright",
-    "No copyright in copyright.json",
-    "Copyright.json needs to have a 'copyright' field stating who owns the copyright.",
-)
-_MISSING_LICENSE = Annotation(
-    Status.FAILED,
-    (_COPYRIGHT_FILE, None, None),
-    "no-license",
-    "No license in copyright.json",
-    (
-        "Copyright.json needs to have a 'license' (or 'licence') "
-        "field with the default license for files."
-    ),
-)
-
 
 class Reuse(Tool):
     """
     Represents a run of the reuse program.
+
+    In 'format' mode, this will add copyright info (based on copyright.json)
+    to all projects.
+    In 'lint' mode, it confirms all copyright and license info is present
+    and cross-referenced.
     """
 
     @classmethod
     def domains(cls) -> set[ToolDomain]:
+        """
+        Reuse: Format = add license info; Lint = check license info.
+        """
         return {ToolDomain.FORMAT, ToolDomain.LINT}
 
     def get_command(self) -> list[str | pathlib.Path]:
-        if self.domain == ToolDomain.LINT:
-            return ["reuse", "lint", "--json"]
+        """
+        Command string to execute (including arguments).
+        """
 
-        _copyright, _license = load_copyright_file()
+        if self.domain == ToolDomain.LINT:
+            return ["reuse", "--root", self._paths.root_path, "lint", "--json"]
+
+        _copyright, _license = load_copyright_file(self._paths.root_path)
 
         return [
             "reuse",
+            "--root",
+            self._paths.root_path,
             "annotate",
             "--merge-copyrights",
             "--copyright" if _copyright else "",
@@ -77,9 +66,18 @@ class Reuse(Tool):
         ]
 
     def get_environment(self) -> dict[str, str]:
+        """
+        Environment variables to set when calling this tool.
+        """
         return {}
 
     def acceptable_exit_codes(self) -> set[int]:
+        """
+        Status codes from the command that indicate the tool succeeded.
+
+        reuse uses status code 1 whilst linting to indicate tests did not pass.
+        """
+
         if self.domain == ToolDomain.LINT:
             return {0, 1}
 
@@ -89,9 +87,20 @@ class Reuse(Tool):
         self,
         data: asyncio.StreamReader,
     ) -> AsyncIterable[Annotation | ToolError]:
-        _copyright, _license = load_copyright_file()
+        """
+        Process the results for either the 'lint' or 'annotate' commands.
 
-        if not _COPYRIGHT_FILE.exists():
+        This first checks that the project is configured correctly with a
+        `copyright.json` in the project root, with definitions of the
+        default copyright holders and license to use for new content.
+
+        After this, the actual tool output is processed by the process_annotate
+        or process_lint function depending on the domain the tool was run in.
+        """
+
+        _copyright, _license = load_copyright_file(self._paths.root_path)
+
+        if not (self._paths.root_path / _COPYRIGHT_FILE).exists():
             yield _MISSING_CONFIG
 
         if not _copyright:
@@ -110,6 +119,21 @@ class Reuse(Tool):
                 yield annotation
 
     def _with_prefix(self, line: bytes, prefix: bytes) -> pathlib.Path | None:
+        """
+        Get the path following a specific prefix message.
+
+        This function takes in an output line, checks if it begins with a prefix.
+        If it does, that prefix is removed and the rest of the line is treated as
+        a path.
+        If the prefix is not present, None is returned.
+
+        ```python
+        input = "Fixed: bar/foo.py"
+        _with_prefix(input, "Fixed:")   # returns Path(bar/foo.py)
+        _with_prefix(input, "Updated:") # returns None
+        ```
+        """
+
         if not line.startswith(prefix):
             return None
 
@@ -122,6 +146,21 @@ class Reuse(Tool):
         line: bytes,
         prefix: bytes,
     ) -> tuple[pathlib.Path, str] | None:
+        """
+        Get the path and note following a specific prefix message.
+
+        This function takes in an output line, checks if it begins with a prefix.
+        If it does, that prefix is removed and the rest of the line is treated as
+        a path in single quotes followed by whitespace and a note.
+        If the prefix is not present, None is returned.
+
+        ```python
+        input = "Skipped file 'bar/foo.py' in gitignore"
+        _with_prefix(input, "Skipped file") # returns (Path(bar/foo.py), "in gitignore")
+        _with_prefix(input, "Updated:") # returns None
+        ```
+        """
+
         if not line.startswith(prefix):
             return None
 
@@ -138,6 +177,8 @@ class Reuse(Tool):
         self,
         data: asyncio.StreamReader,
     ) -> AsyncIterable[Annotation | ToolError]:
+        """Process the output of the `reuse annotate` command."""
+
         while line := await data.readline():
             if info := self._with_prefix_and_note(line, b"Skipped file "):
                 yield Annotation(Status.PASSED, (info[0], None, None), "reuse", info[1])
@@ -158,6 +199,12 @@ class Reuse(Tool):
         self,
         data: asyncio.StreamReader,
     ) -> AsyncIterable[Annotation | ToolError]:
+        """
+        Process the output of the `reuse lint --json` command.
+
+        This handles both the per-file syntax checks,
+        and also the missed/extra/unknown licenses definitions.
+        """
         output = json.loads(await data.read())
 
         passed = {pathlib.Path(file["path"]) for file in output["files"]}
@@ -178,9 +225,13 @@ class Reuse(Tool):
         issues: dict[str, dict[str, list[str]]],
         passed: set[pathlib.Path],
     ) -> Iterator[Annotation]:
+        """
+        Annotations related to extra/missing licenses in the LICENSES folder.
+        """
+
         for name, files in issues["bad_licenses"].items():
             yield Annotation(
-                Status.FAILED,
+                Status.ISSUE,
                 None,
                 "bad-license",
                 f"Bad license {name}",
@@ -191,7 +242,7 @@ class Reuse(Tool):
         for name, files in issues["missing_licenses"].items():
             file = _LICENSE_DIR / f"{name}.txt"
             yield Annotation(
-                Status.FAILED,
+                Status.ISSUE,
                 file,
                 "missing-license",
                 f"Missing license {name}",
@@ -203,10 +254,13 @@ class Reuse(Tool):
     def _license_issues(
         issues: dict[str, list[str] | dict[str, str]],
     ) -> Iterator[Annotation]:
+        """
+        Annotations related the state of licenses in use.
+        """
         for name in issues["deprecated_licenses"]:
             file = _LICENSE_DIR / f"{name}.txt"
             yield Annotation(
-                Status.FAILED,
+                Status.ISSUE,
                 file,
                 "deprecated-license",
                 f"Deprecated license {name}",
@@ -214,7 +268,7 @@ class Reuse(Tool):
 
         for name in issues["unused_licenses"]:
             file = _LICENSE_DIR / f"{name}.txt"
-            yield Annotation(Status.FAILED, file, "unused-license", f"Unused license {name}")
+            yield Annotation(Status.ISSUE, file, "unused-license", f"Unused license {name}")
 
         licenses = issues["licenses_without_extension"]
         if not isinstance(licenses, dict):
@@ -223,7 +277,7 @@ class Reuse(Tool):
         for name, file_name in licenses.items():
             file = pathlib.Path(file_name)
             yield Annotation(
-                Status.FAILED,
+                Status.ISSUE,
                 file,
                 "missing-license",
                 f"Missing license {name}",
@@ -234,58 +288,32 @@ class Reuse(Tool):
         issues: dict[str, list[str]],
         passed: set[pathlib.Path],
     ) -> Iterator[Annotation]:
+        """
+        Annotations for files missing license or copyright information.
+        """
+
         for file_name in issues["missing_copyright_info"]:
             file = pathlib.Path(file_name)
-            yield Annotation(Status.FAILED, file, "no-copyright", "No SPDX copyright line")
+            yield Annotation(Status.ISSUE, file, "no-copyright", "No SPDX copyright line")
             passed.discard(file)
 
         for file_name in issues["missing_licensing_info"]:
             file = pathlib.Path(file_name)
-            yield Annotation(Status.FAILED, file, "no-license", "No SPDX license line")
+            yield Annotation(Status.ISSUE, file, "no-license", "No SPDX license line")
             passed.discard(file)
 
-    @staticmethod
-    def _template_missing_license(license_name: str, file: pathlib.Path) -> Annotation:
-        return Annotation(
-            Status.FAILED,
-            (file, None, None),
-            "missing-license",
-            f"Missing License {license_name}",
-            f"The license information for {license_name} should be in the LICENSES folder.",
-        )
 
-    @staticmethod
-    def _template_unused_license(name: str) -> Annotation:
-        return Annotation(
-            Status.FAILED,
-            (pathlib.Path(f"LICENSES/{name}.txt"), None, None),
-            "extra-license",
-            f"Unused License {name}",
-            f"The license {name} is in the LICENSES folder, but is not used by any file.",
-        )
-
-    @staticmethod
-    def _template_missing_header(file: str) -> Annotation:
-        return Annotation(
-            Status.FAILED,
-            (pathlib.Path(file), None, None),
-            "missing-copyright",
-            f"Missing copyright in {file}",
-            f"{file} is missing SPDX license or copyright headers.",
-        )
-
-
-def load_copyright_file() -> tuple[str | None, str | None]:
+def load_copyright_file(root: pathlib.Path) -> tuple[str | None, str | None]:
     """
     Attempts to load a copyright.json standard from the cwd.
 
     If there is one.
     :return:
     """
-    if not _COPYRIGHT_FILE.exists():
+    if not (root / _COPYRIGHT_FILE).exists():
         return None, None
 
-    with _COPYRIGHT_FILE.open("rb") as json_infile:
+    with (root / _COPYRIGHT_FILE).open("rb") as json_infile:
         copyright_info = json.load(json_infile)
 
     if not isinstance(copyright_info, dict):
@@ -302,6 +330,66 @@ def load_copyright_file() -> tuple[str | None, str | None]:
         new_licence = str(copyright_info["licence"])
 
     return new_copyright, new_licence
+
+
+#######################################
+# Annotation Templates
+#######################################
+
+_MISSING_CONFIG = Annotation(
+    Status.ISSUE,
+    (_COPYRIGHT_FILE, None, None),
+    "no-config",
+    "Missing copyright.json",
+    "copyright.json should exist in root dir with a copyright and license field.",
+)
+_MISSING_RIGHT = Annotation(
+    Status.ISSUE,
+    (_COPYRIGHT_FILE, None, None),
+    "no-copyright",
+    "No copyright in copyright.json",
+    "Copyright.json needs to have a 'copyright' field stating who owns the copyright.",
+)
+_MISSING_LICENSE = Annotation(
+    Status.ISSUE,
+    (_COPYRIGHT_FILE, None, None),
+    "no-license",
+    "No license in copyright.json",
+    (
+        "Copyright.json needs to have a 'license' (or 'licence') "
+        "field with the default license for files."
+    ),
+)
+
+
+def _template_missing_header(file: str) -> Annotation:
+    return Annotation(
+        Status.ISSUE,
+        (pathlib.Path(file), None, None),
+        "missing-copyright",
+        f"Missing copyright in {file}",
+        f"{file} is missing SPDX license or copyright headers.",
+    )
+
+
+def _template_unused_license(name: str) -> Annotation:
+    return Annotation(
+        Status.ISSUE,
+        (pathlib.Path(f"LICENSES/{name}.txt"), None, None),
+        "extra-license",
+        f"Unused License {name}",
+        f"The license {name} is in the LICENSES folder, but is not used by any file.",
+    )
+
+
+def _template_missing_license(license_name: str, file: pathlib.Path) -> Annotation:
+    return Annotation(
+        Status.ISSUE,
+        (file, None, None),
+        "missing-license",
+        f"Missing License {license_name}",
+        f"The license information for {license_name} should be in the LICENSES folder.",
+    )
 
 
 __all__ = ["Reuse"]

@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: BSD-2-Clause
 
 """
-Panthera tools which reformat (or otherwise mutate) the source code.
+Bastet tools which reformat (or otherwise mutate) the source code.
 """
 
 from __future__ import annotations as _future_annotations
@@ -33,18 +33,36 @@ class Ruff(Tool):
 
     @classmethod
     def domains(cls) -> set[ToolDomain]:
+        """
+        Ruff: a general purpose formatting, linting, and auditing tool.
+
+        We do not include it in the Audit domain as there is no good way
+        to separate out its linting and audit annotations.
+        """
+
         return {ToolDomain.FORMAT, ToolDomain.LINT}
 
     def get_command(self) -> list[str | pathlib.Path]:
+        """
+        Command string to execute (including arguments).
+        """
         if self.domain == ToolDomain.LINT:
             return ["ruff", "check", "--output-format=json-lines", *self._paths.python_path]
 
         return ["ruff", "check", "--fix", "--fix-only", *self._paths.python_path]
 
     def get_environment(self) -> dict[str, str]:
+        """
+        Environment variables to set when calling this tool.
+        """
         return {}
 
     def acceptable_exit_codes(self) -> set[int]:
+        """
+        Status codes from the command that indicate the tool succeeded.
+
+        ruff uses status code 1 whilst linting to indicate tests did not pass.
+        """
         return {0, 1}
 
     async def process_results(
@@ -80,7 +98,7 @@ class Ruff(Tool):
                 continue
 
             yield Annotation(
-                Status.FAILED,
+                Status.ISSUE,
                 (
                     pathlib.Path(info["filename"]),
                     info["location"]["row"],
@@ -97,10 +115,20 @@ class _DiffProcessorMixin(Tool):
         data: StreamReader,
     ) -> AsyncIterable[Annotation | ToolError]:
         """
-        Run 'black', an automatic formatting tool.
+        Process the output of a command that produces diffs.
 
-        Black handles most formatting updates automatically, maintaining
-        readability and code style compliance.
+        The format is assumed to be
+        ```
+        error: [some text]
+        --- path/to/file
+        +++ path/to/file
+        @@ -n,n +n,n @@
+        [patch contents]
+        ```
+
+        The initial `error:` line will be passed to the `_tokenise_error`
+        abstract method to build out the outline of the annotation, which
+        the diff will then be attached to.
         """
 
         last_annotation: Annotation | None = None
@@ -109,14 +137,15 @@ class _DiffProcessorMixin(Tool):
             line = (await data.readline()).decode("utf-8", errors="replace")
 
             if line.startswith("error: "):
-                yield self._tokenise_error(line)
+                yield self._tokenize_error(line)
                 continue
 
             if line.startswith("--- "):
                 if last_annotation:
                     yield last_annotation
 
-                file = pathlib.Path(line.removeprefix("--- ").partition("\t")[0])
+                filename = line.removeprefix("--- ").partition("\t")[0]
+                file = pathlib.Path(filename.removesuffix(":before"))
                 await data.readline()  # Skip the +++ line.
                 line = (await data.readline()).decode("utf-8", errors="replace")
                 last_annotation = self._diff_header_to_annotation(file, line)
@@ -140,13 +169,15 @@ class _DiffProcessorMixin(Tool):
 
         header = f"{self.name} change ({add} lines affected)"
 
-        annotation = Annotation(Status.FAILED, (file, int(row), None), "edit", header)
+        annotation = Annotation(Status.ISSUE, (file, int(row), None), "edit", header)
         annotation.add_diff_line(line)
         return annotation
 
     @abc.abstractmethod
-    def _tokenise_error(self, error: str) -> Annotation | OutputParsingError:
-        pass
+    def _tokenize_error(self, error: str) -> Annotation | OutputParsingError:
+        """
+        Tokenize the error header message line before the diff.
+        """
 
 
 class ISort(_DiffProcessorMixin):
@@ -159,15 +190,24 @@ class ISort(_DiffProcessorMixin):
 
     @classmethod
     def domains(cls) -> set[ToolDomain]:
+        """
+        Black: Code formatting and code style checking.
+        """
         return {ToolDomain.FORMAT, ToolDomain.LINT}
 
     def get_command(self) -> list[str | pathlib.Path]:
+        """
+        Command string to execute (including arguments).
+        """
         if self.domain == ToolDomain.FORMAT:
             return ["isort", *self._paths.python_path]
 
         return ["isort", "--diff", "--quiet", "--check", *self._paths.python_path]
 
     def get_environment(self) -> dict[str, str]:
+        """
+        Environment variables to set when calling this tool.
+        """
         return {}
 
     async def process_results(
@@ -188,13 +228,23 @@ class ISort(_DiffProcessorMixin):
         async for note in self.process_diffs(data):
             yield note
 
-    def _tokenise_error(self, error: str) -> Annotation | OutputParsingError:
+    def _tokenize_error(self, error: str) -> Annotation | OutputParsingError:
         return OutputParsingError(data=error)
 
 
 class Black(_DiffProcessorMixin):
+    """
+    Run 'black', an automatic formatting tool.
+
+    Black handles most formatting updates automatically, maintaining
+    readability and code style compliance.
+    """
+
     @classmethod
     def domains(cls) -> set[ToolDomain]:
+        """
+        Black: Code formatting and code style checking.
+        """
         return {ToolDomain.FORMAT, ToolDomain.LINT}
 
     def get_command(self) -> list[str | pathlib.Path]:
@@ -228,7 +278,7 @@ class Black(_DiffProcessorMixin):
         async for note in self.process_diffs(data):
             yield note
 
-    def _tokenise_error(self, error: str) -> Annotation | OutputParsingError:
+    def _tokenize_error(self, error: str) -> Annotation | OutputParsingError:
         # We should, at this point, have a conventional "error: " line.
         error = error.removeprefix("error: ")
 
@@ -240,7 +290,7 @@ class Black(_DiffProcessorMixin):
         source = pathlib.Path(file.strip()), int(line.strip()), int(char.strip())
 
         return Annotation(
-            Status.ERROR,
+            Status.EXCEPTION,
             source,
             "error",
             reason,

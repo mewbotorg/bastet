@@ -18,7 +18,7 @@ concurrency:
 env:
   # Which version of the reports Sonar receives.
   DEFAULT_OS: ubuntu
-  DEFAULT_PYTHON: "3.10"
+  DEFAULT_PYTHON: "3.11"
 
 jobs:
   test:
@@ -29,7 +29,7 @@ jobs:
       fail-fast: false
       matrix:
         os: ["ubuntu"]
-        version: ["3.11", "3.12"]
+        version: ["3.11", "3.12", "3.13"]
 
     steps:
       - name: Checkout
@@ -42,13 +42,13 @@ jobs:
           cache: pip
           cache-dependency-path: requirements.txt
 
-      - name: Install panthera
+      - name: Install bastet
         shell: bash
         run: pip install .
 
-      - name: Run panthera against panthers
+      - name: Run bastet against bastet
         shell: bash
-        run: panthera --skip format --reporter github
+        run: bastet --skip format --reporter github
 
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4

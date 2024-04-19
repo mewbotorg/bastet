@@ -2,6 +2,14 @@
 #
 # SPDX-License-Identifier: BSD-2-Clause
 
+"""
+Bastet Configuration.
+
+ - Options class for storing and passing runtime options.
+ - Tooling for gathering files that are "in the project".
+ - Tooling for reading the configuration toml.
+"""
+
 from __future__ import annotations as _future_annotations
 
 from collections.abc import Callable, Iterable
@@ -25,47 +33,18 @@ GITIGNORE_NAME = ".gitignore"
 GitIgnore = Callable[[Path], bool]
 
 
-class PantheraConfiguration:
-    @staticmethod
-    def add_options(parser: argparse.ArgumentParser) -> argparse.ArgumentParser:
-        parser.add_argument(
-            "--root",
-            nargs=argparse.OPTIONAL,
-            help="Root directory of the project.",
-        )
-        parser.add_argument(
-            "--skip",
-            nargs=argparse.ZERO_OR_MORE,
-            help="Names of tools and domains to skip (in extension to configured 'disable').",
-        )
-        parser.add_argument(
-            "--disable",
-            nargs=argparse.ZERO_OR_MORE,
-            help="Names of tools and domains to disable (overrides config).",
-        )
-        parser.add_argument(
-            "--exclude",
-            nargs=argparse.ZERO_OR_MORE,
-            help="Folder names to exclude from discovery (gitignore format).",
-        )
-        parser.add_argument(
-            "--reporter",
-            nargs=argparse.ZERO_OR_MORE,
-            help="Class name of a reporter tool to use.",
-            choices=reporters.keys(),
-        )
-        parser.add_argument(
-            "folders",
-            nargs=argparse.REMAINDER,
-            help="List of source files to scan.",
-        )
+class BastetConfiguration:
+    """
+    Configuration for a Bastet run.
 
-        return parser
+    :property config:
+        The configuration loaded from the pyproject.toml configuration file.
+    """
 
     config: dict[str, Any]
 
-    root_dir: Path
     folders: PathRepo
+    reports: Path
 
     skip_tools: set[str]
     skip_domains: set[ToolDomain]
@@ -73,21 +52,35 @@ class PantheraConfiguration:
     reporters: set[type[Reporter]]
 
     def __init__(self, logger: logging.Logger, args: argparse.Namespace) -> None:
+        """
+        Setup runtime configuration.
+
+        This function:
+         - Detects the project's root directory.
+         - Loads default configuration from pyproject.toml.
+         - Merges in the command line options.
+         - Determines the reporters to select.
+         - Determines the domains and tools to exclude.
+         - Builds out the list of folders to scan.
+        """
+
         logger.debug("Receive CLI args %s", args)
 
+        # Find the "root" of the repo (where the pyproject.toml should be).
         if args.root:
-            self.root_dir = Path().resolve()
+            root_dir = Path().resolve()
         else:
             logger.debug("Auto detecting repo root")
-            self.root_dir = _find_pyproject(logger) or Path.cwd()
+            root_dir = _find_pyproject(logger) or Path.cwd()
 
-        logger.debug("Root Dir set to %s", self.root_dir)
+        logger.debug("Root Dir set to %s", root_dir)
 
-        self.config = _load_config(logger, self.root_dir)
+        # Load the config file version of the config.
+        self.config = _load_config(logger, root_dir)
 
-        pypath_filter = set(self._config_list("sources", ["src", "tests"]))
-        logger.debug("PYTHON_PATH selector set to %s", pypath_filter)
+        self.reports = root_dir / "reports"
 
+        # Config the list of reporting engines to use
         self.reporters = set()
         for reporter in args.reporter or self._config_list("reporters", ["note"]):
             if reporter.lower() not in reporters:
@@ -96,19 +89,31 @@ class PantheraConfiguration:
             self.reporters.add(reporters[reporter])
         logger.debug("Reporters set to %s")
 
+        # Determine what domains and tools are not to be run.
+        # Note: "disabled" and "skip" are distinct lists; the difference is
+        # "skip" can only be specified on the CLI. The two lists are merged.
         disabled = args.disable or self._config_list("disable", [])
         disabled += args.skip or []
         self.skip_domains, self.skip_tools = self._tools_or_domains(disabled)
         logger.debug("disabled domains: %s", self.skip_domains)
         logger.debug("disabled tools: %s", self.skip_tools)
 
+        # Set up the source folders that will be scanned
+        pypath_filter = set(self._config_list("sources", ["src", "tests"]))
+        logger.debug("PYTHON_PATH selector set to %s", pypath_filter)
+
         exclude = args.exclude or self._config_list("exclude", [])
         logger.debug("exclusion list set to %s", exclude)
 
-        folders = PathGatherer(logger, self.root_dir)
+        # Gather all the paths that are included
+        initial_folders = [Path(path) for path in args.folders]
+        folders = PathGatherer(logger, root_dir, initial_folders)
         self.folders = folders.gather(exclude, pypath_filter)
 
     def _tools_or_domains(self, items: Iterable[str]) -> tuple[set[ToolDomain], set[str]]:
+        """
+        Splits a list of config references into a set of domains and a set of tools.
+        """
         domains = set()
         tools = set()
 
@@ -125,6 +130,9 @@ class PantheraConfiguration:
         return domains, tools
 
     def _config_list(self, key: str, default: list[str]) -> list[str]:
+        """
+        Get a list from the TOML config, or a default if not set or not a list.
+        """
         if key not in self.config:
             return default
 
@@ -139,7 +147,54 @@ class PantheraConfiguration:
 
     @property
     def domains(self) -> list[ToolDomain]:
+        """
+        Gets the list of domains that are selected in this config.
+        """
         return [domain for domain in ToolDomain if domain not in self.skip_domains]
+
+
+def add_options(parser: argparse.ArgumentParser) -> argparse.ArgumentParser:
+    """
+    Add out configuration options to an ArgumentParser.
+
+    The output of that parse will be then be used to create a BastetConfiguration
+    instance, which will combine the file-based configuration with the command
+    line options to build the overall run configuration.
+    """
+
+    parser.add_argument(
+        "--root",
+        nargs=argparse.OPTIONAL,
+        help="Root directory of the project.",
+    )
+    parser.add_argument(
+        "--skip",
+        nargs=argparse.ZERO_OR_MORE,
+        help="Names of tools and domains to skip (in extension to configured 'disable').",
+    )
+    parser.add_argument(
+        "--disable",
+        nargs=argparse.ZERO_OR_MORE,
+        help="Names of tools and domains to disable (overrides config).",
+    )
+    parser.add_argument(
+        "--exclude",
+        nargs=argparse.ZERO_OR_MORE,
+        help="Folder names to exclude from discovery (gitignore format).",
+    )
+    parser.add_argument(
+        "--reporter",
+        nargs=argparse.ZERO_OR_MORE,
+        help="Class name of a reporter tool to use.",
+        choices=reporters.keys(),
+    )
+    parser.add_argument(
+        "folders",
+        nargs=argparse.REMAINDER,
+        help="List of source files to scan.",
+    )
+
+    return parser
 
 
 class PathGatherer:
@@ -154,10 +209,11 @@ class PathGatherer:
 
     _pypath_selector: set[str]
 
-    def __init__(self, logger: logging.Logger, root: Path) -> None:
+    def __init__(self, logger: logging.Logger, root: Path, folders: list[Path]) -> None:
         self.root = root.absolute()
         self.logger = logger
 
+        self._initial_folders = folders
         self._potential_py_path = set()
         self._python_path = set()
         self._python_module_path = set()
@@ -182,7 +238,12 @@ class PathGatherer:
             self.logger.debug("Adding %s to gitignore list", local_ignores)
             _ignores.append(gitignore_parser.parse_gitignore(local_ignores, self.root))
 
-        self._scan_dir(self.root, _ignores)
+        for root in self._initial_folders if self._initial_folders else [self.root]:
+            if not root.exists():
+                self.logger.warning("%s does not exist, can not scan", root)
+                continue
+
+            self._scan_dir(root, _ignores)
 
         self.logger.debug("PYTHON_PATH:      %s", self._python_path)
         self.logger.debug("Module Roots:     %s", self._python_module_path)
@@ -298,10 +359,10 @@ def _load_config(logger: logging.Logger, folder: Path) -> dict[str, Any]:
     with file.open("rb") as in_file:
         toml = tomllib.load(in_file)
 
-    config: dict[str, Any] = toml.get("tool", {}).get("panthera", {})
+    config: dict[str, Any] = toml.get("tool", {}).get("bastet", {})
 
     if not isinstance(config, dict):
-        logger.warning("Bad config: '[tool.panthera]' section in %s is not a dict", file)
+        logger.warning("Bad config: '[tool.bastet]' section in %s is not a dict", file)
         config = {}
 
     logger.debug("Loaded config: %s", config)
@@ -338,7 +399,7 @@ def _find_pyproject(logger: logging.Logger) -> Path | None:
 
 
 def main() -> None:
-    logger = logging.getLogger("panthera.config")
+    logger = logging.getLogger("bastet.config")
 
     logger.debug("Auto detecting repo root")
     root = _find_pyproject(logger) or Path.cwd()
@@ -350,10 +411,12 @@ def main() -> None:
     pypath_filter = set(config.get("sources", ["src", "tests"]))
     logger.debug("PYTHON_PATH selector set to %s", pypath_filter)
 
-    folders = PathGatherer(logger, root).gather([], pypath_filter)
+    folders = PathGatherer(logger, root, []).gather([], pypath_filter)
     sorted_folders = sorted(map(str, folders.python_path), key=len, reverse=True)
 
+    sys.stdout.write("\n-- Python paths\n")
     sys.stdout.write(os.pathsep.join(sorted_folders))
+    sys.stdout.write("\n")
 
 
 if __name__ == "__main__":

@@ -4,21 +4,22 @@ SPDX-FileCopyrightText: 2023 Mewbot Developers <mewbot@quicksilver.london>
 SPDX-License-Identifier: BSD-2-Clause
 -->
 
-# Panthera
+# Bastet
 
-TODO: Writing description.
+Bastet, the cat god, takes all of our test and puts them in one basket.
+
+TODO: Write description.
 
 ## Purpose
 
 While developing mewbot we built a number of tools to assist with development.
 This mostly consist of tool chains for
- - running the linters
- - building dev venvs (still forthcoming)
- - building the docs (still forthcoming)
- - gather and run the tests
+
+ - automatically reformatting code
+ - running the linters, include type checking, style guides, and security auditing
 
 The aim of these tools is that, if you run them on a code base, you should
-end up with something which conforms to mewbot's guidelines.
+end up with something which conforms to MewBot's guidelines.
 
 ## Usage
 
@@ -30,25 +31,36 @@ If your project is in that `src-dir` layout, you can install the dev tools
 and then run any of the toolchains.
 
 ```sh
-pip install panthera
+pip install bastet
 
-mewbot-install-deps  # Install dependencies from discovered requirements.txt
-
-mewbot-preflight # Run all of the toolchains below
-
-mewbot-lint  # Code style and type linting, using black/flake/ruff/mypy/pylint
-mewbot-reuse # Licensing information check, using reuse
-mewbot-test  # Run discovered test suites, using pytest
-mewbot-security-analysis  # Discover potential security bugs using badnit
-
-mewbot-annotate  # Convert output data into GitHub annotations
+bastet --help
+bastet format # Automated formatting, using black/isort/ruff
+bastet lint   # Code style and type linting, using black/flake8/ruff/mypy/pylint
+bastet audit  # Audit and security checks, using bandit
 ```
 
-We also recommend that you setup `mewbot-prefilght` as a
+We also recommend that you set up `mewbot-prefilght` as a
 [pre-commit or pre-push hook](https://git-scm.com/book/en/v2/Customizing-Git-Git-Hooks).
 
-## Future Work
+## Default Configuration
 
-- Ability to opt-out for some linters in pyproject.toml
-- Work to discover locations based on pyproject.toml
+TODO: Write this section
 
+The recommended `pyproject.toml` for starter projects can be found in
+
+## Advance Config and Debug
+
+You can check what the configuration is doing with `--debug` the debug flag on
+a run, or by running `python -m bastet.config` to just run the configuration steps.
+
+## Integrating with CI
+
+TODO: Write this section
+
+## Integrating with Sonar
+
+TODO: Write this section
+
+## Extending with Custom Tools
+
+TODO: Write this section

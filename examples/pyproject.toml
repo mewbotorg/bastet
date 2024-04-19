@@ -1,0 +1,64 @@
+# SPDX-FileCopyrightText: 2021 - 2023 Mewbot Developers <mewbot@quicksilver.london>
+#
+# SPDX-License-Identifier: CC0-1.0
+
+[tool.bastet]
+
+
+
+[tool.black]
+
+line-length = 94
+
+[tool.ruff]
+line-length = 94
+target-version = "py311"
+
+[tool.ruff.lint]
+
+select = ["ALL"]
+ignore = [
+    "D200",  # Single line doc strings do not need to fit on a single line in code.
+    "D203",  # Zero blank lines before docstring.
+    "D202",  # One blank line after docstring.
+    "D212",  # Multi-line docstring summary should start at the second line.
+    "D401",  # Docs strings do not have to be in the imperative mood.
+
+    "ANN101", "ANN102", # Don't require type annotations for 'self' and 'cls'
+
+    "TCH001", "TCH002", "TCH003",  # Don't use if TYPE_CHECKING: blocks.
+
+    "EM101",  # Exceptions can use string literals
+]
+
+[tool.ruff.lint.isort]
+
+# Section ordering
+section-order = ['future', 'typing', "standard-library", "third-party", "first-party", "local-folder"]
+sections = {"typing" = ["typing", "types", "typing_extensions", "collections.abc"]}
+
+[tool.isort]
+profile = "black"
+py_version = 311
+
+# Section ordering
+sections = ['FUTURE', 'TYPING', 'STDLIB', 'THIRDPARTY', 'FIRSTPARTY', 'LOCALFOLDER']
+known_typing = ["typing", "types", "typing_extensions", "collections.abc"]
+
+# Always have deferred annotation processing. We rename it so we can use 'annotations' as a name.
+add_imports = ["from __future__ import annotations as _future_annotations"]
+
+# 9 is black compatible, but does not look great
+multi_line_output = 3
+
+[tool.flake8]
+
+max-complexity = 8
+max-line-length = 100
+
+[tool.pydocstyle]
+
+convention="pep257"
+add-ignore=["D200", "D202", "D401"]
+add-select=["D204", "D213", "D416", "D417"]
+ignore-self-only-init=true

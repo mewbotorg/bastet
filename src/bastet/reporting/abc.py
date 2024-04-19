@@ -13,7 +13,7 @@ import logging
 import subprocess  # nosec: B404
 from asyncio import StreamReader, Task, gather, get_running_loop
 
-from panthera.tools import Annotation, Tool, ToolError, ToolResults
+from bastet.tools import Annotation, Tool, ToolError, ToolResults
 
 
 class ProcessPipeError(subprocess.SubprocessError):

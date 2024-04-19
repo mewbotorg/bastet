@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: BSD-2-Clause
 
 """
-Support classes for running a series of tools across the codebase.
+Support classes for running a series of tools across a codebase.
 """
 
 from __future__ import annotations as _future_annotations
@@ -22,25 +22,61 @@ from .exceptions import InvalidDomainError, ProcessError, ToolError
 
 
 class ToolDomain(enum.StrEnum):
+    """
+    The domains we group tooling operations into.
+
+    :param FORMAT:
+        Automated fixes to the code to comply with formatting and layout
+        requirements.
+    :param LINT:
+        Checks for coding and formatting errors.
+    :param AUDIT:
+        Checks for security and resilience errors.
+    """
+
     FORMAT = "Format"
     LINT = "Lint"
     AUDIT = "Audit"
 
 
 class Status(enum.Enum):
+    """
+    The Status of a Tool run or Annotation.
+
+    :param PASSED:
+        The test, check, or tool passed with no problems.
+    :param FIXED:
+        The tool performed an automatic fix of a problem.
+    :param WARNING:
+        The tool encountered a warning. This is reserved only
+        for warning related to the tooling itself, not the code
+        that is being checked. For example, a bad configuration
+        value would be a warning, whereas a minor code problem
+        would still be an ISSUE.
+    :param ISSUE:
+        A check, test, or tool was run successfully and reported
+        a problem, issue etc.
+        This is the bulk of what the tools will be returning
+    :param EXCEPTION:
+        The tooling encountered an error whilst running.
+    """
+
     PASSED = "Passed"
     FIXED = "Fixed"
     WARNING = "Warning"
-    FAILED = "Failed"
-    ERROR = "Error"
+    ISSUE = "Failed"
+    EXCEPTION = "Error"
 
     def __lt__(self, other: Status) -> bool:
+        """Total ordering for Status enum."""
         return _STATUS_ORDERING[self] < _STATUS_ORDERING[other]
 
     def __gt__(self, other: Status) -> bool:
+        """Total ordering for Status enum."""
         return _STATUS_ORDERING[self] > _STATUS_ORDERING[other]
 
     def __ge__(self, other: Status) -> bool:
+        """Total ordering for Status enum."""
         return other == self or self.__gt__(other)
 
 
@@ -48,20 +84,39 @@ _STATUS_ORDERING = {name: idx for idx, name in enumerate(Status)}
 
 
 class ToolResult(NamedTuple):
+    """
+    The collected results of a specific tool run.
+
+    :param success:
+        The overall status of the tool run. This will be equal to the highest
+        annotation severity, unless an unhandled exception occurred in the tool,
+        in which case it will be set to the Exception status.
+    :param exit_code:
+        The shell exit code of the Tool
+    :param annotation_counts:
+        Count of the number of annotations from the Tool grouped be Status.
+    """
+
     success: Status
     exit_code: int
     annotation_counts: dict[Status, int]
 
     def annotation_above(self, status: Status) -> int:
+        """
+        Returns a count of annotations at or higher severity than the given Status.
+        """
         return sum(v for k, v in self.annotation_counts.items() if k >= status)
 
     def annotation_count(self, status: Status) -> int:
+        """
+        Returns a count of annotations for the given Status.
+        """
         return self.annotation_counts.get(status, 0)
 
 
 class Tool(abc.ABC):
     """
-    A Tool represents something Panthera can run to validate code.
+    A Tool represents something Bastet can run to validate code.
 
     The tool object is a wrapper around an external program, and
     is responsible for converting the output into a series of annotations.
@@ -99,6 +154,7 @@ class Tool(abc.ABC):
         self._paths = paths
 
     def __repr__(self) -> str:
+        """Tool domain and info for logging and debugging."""
         return f"<{self._domain}:{self.name}@{id(self)}>"
 
     @property
@@ -121,6 +177,7 @@ class Tool(abc.ABC):
         """
         Command string to execute (including arguments).
 
+        FIXME: this is wrong, rewrite with truth.
         This will be directly executed (i.e. not in a shell).
         The list of root folders is provided in an argument;
         the tool should be configured to examine these recursively.
@@ -131,7 +188,7 @@ class Tool(abc.ABC):
         """
         Environment variables to set when calling this tool.
 
-        These will be merged into the environment that panthera
+        These will be merged into the environment that bastet
         was called in.
         """
 
@@ -152,15 +209,19 @@ class Tool(abc.ABC):
         Both the Annotations and ToolErrors will be passed to the
         Reporters, and the ToolResults collection.
         """
-        yield Annotation(Status.ERROR, None, "bad-class", "Abstract Method Called")
+        yield Annotation(Status.EXCEPTION, None, "bad-class", "Abstract Method Called")
 
     def acceptable_exit_codes(self) -> set[int]:
         """
         Status codes from the command that indicate the tool succeeded.
 
-        The tool run will be considered overall successful if it exits
+        The tool succeeding refers to whether it was able to produce all
+        annotations, not whether they all passed. If the tool has specific
+        an exit code for "the code did not pass checks", it should be added
+        to this set.
+        The tool run will be considered overall passed if it exits
         with one of these codes, and did not produce any annotations
-        with a 'failed' or 'error' status.
+        with a 'issue' or 'exception' status.
         """
         return {0}
 
@@ -217,13 +278,13 @@ class ToolResults:
         annotation_levels = Counter(annotation.status for annotation in annotations)
 
         if exceptions:
-            status = Status.ERROR
+            status = Status.EXCEPTION
         elif annotations:
             status = max(annotation_levels)
         else:
             status = Status.PASSED
 
-        self.success = self.success and (status < Status.FAILED)
+        self.success = self.success and (status < Status.ISSUE)
         self.annotations.extend(annotations)
         self.exceptions.extend(exceptions)
         self.results[tool] = ToolResult(status, exit_code, annotation_levels)
@@ -232,15 +293,35 @@ class ToolResults:
 @dataclasses.dataclass
 class Annotation:
     """
-    Schema for a GitHub action annotation, representing an error.
+    Dataclass for an annotation/note output from a Tool.
 
-    TODO: New description
+    It has three data points that categorise it:
+     - the tool that generated the annotation;
+     - the annotation's status;
+     - and the location in the source code
+
+    The annotation's status defines combines the concept of
+    log levels with the testing pass/fail/error into one short
+    list of severities.
+    The source can either be the project as a whole,
+    a specific file, or a specific line within a file.
+
+    Attached to this metadata is a message, an error code,
+    and optionally a description with more information.
     """
 
     _CWD = pathlib.Path.cwd().absolute()
 
     @classmethod
     def set_root(cls, path: pathlib.Path) -> None:
+        """
+        Mark the root directory for annotations.
+
+        Paths will be normalised, formatted, and printed relative to this path.
+        Changing this after creating annotations is not supported, and the
+        behaviour is undefined.
+        """
+
         cls._CWD = path
 
     @classmethod
@@ -248,6 +329,13 @@ class Annotation:
         cls,
         source: tuple[pathlib.Path, int | None, int | None] | pathlib.Path | None,
     ) -> tuple[pathlib.Path, int, int]:
+        """
+        Take all representations of the Source and encode as (file, line, column).
+
+        The source can either be the project as a whole (input of None),
+        a specific file, or a specific line and column within a file.
+        """
+
         if not source:
             return cls._CWD, 0, 0
 
@@ -273,6 +361,26 @@ class Annotation:
         message: str,
         description: str | None = None,
     ) -> None:
+        """
+        Create an annotation.
+
+        :param Status status:
+            What 'status' to associate with this annotation. See the Status class for details.
+        :param source:
+            Where the annotation relates to in the code.
+        :param str code:
+            An identifying error code for this type of issue. Many linting tools use these
+            to index documentation, and to exclude certain tests in their configurations.
+            If the tool does not supply one, choose a unique and concise description of the issue.
+        :param str message:
+            The error message to be present to the user
+        :param description:
+            An optional and potentially multi line description of the error,
+            why it is considered an error, how to fix it, or links to external references.
+            This should not include diffs, which instead should be attached using the
+            add_diff_line method.
+        """
+
         self.status = status
         self.source = self._normalise_source(source)
         self.code = code.strip()
@@ -280,17 +388,19 @@ class Annotation:
         self.description = description.strip() if description else None
         self.diff = None
 
-    def json(self) -> dict[str, str | int]:
-        """Output this object as a JSON-encodeable dictionary."""
-
-        return dataclasses.asdict(self)
-
     @property
     def filename(self) -> str:
+        """
+        Returns the filename of the annotation relative to the project root.
+
+        This does not include the line number.
+        If the path is the project root, '.' is returned.
+        """
+
         root = self._CWD
 
         if self.source[0] == root:
-            return "[project]"
+            return "."
 
         return str(self.source[0].relative_to(self._CWD))
 
@@ -298,6 +408,9 @@ class Annotation:
     def file_str(self) -> str:
         """
         Returns the project path of the file, with the line number and column if set.
+
+        The returned string is relative to the project root (which many UIs will
+        convert into a link). If the path is the project root, it returns just '[project]'.
         """
         root = self._CWD
 
@@ -328,21 +441,38 @@ class Annotation:
         if not isinstance(other, Annotation):
             return False
 
-        if self.source == other.source:
+        if self.same_source(other.source):
             return self.code < other.code
 
         return self.source < other.source
 
     def same_source(self, source: tuple[pathlib.Path, int | None, int | None] | None) -> bool:
+        """
+        Check if another Annotation source normalises to this Annotation's source.
+        """
         return self._normalise_source(source) == self.source
 
     def add_note(self, info: str) -> None:
+        """
+        Adds additional context to the annotation.
+
+        Each call will add a new line of text to the notes.
+        """
         if self.description:
             self.description += "\n" + info.rstrip()
         else:
             self.description = info.rstrip()
 
     def add_diff_line(self, line: str) -> None:
+        """
+        Adds a line of text to an inline diff.
+
+        Tools that are outputting diffs in their Annotations are responsible
+        for ensuring diffs are 'correct'. Diffs are assumed to be in the
+        file associated with the annotation, so the first line should be the
+        block header (`@@ -n,n +n,n@@`).
+        """
+
         if not self.diff:
             self.diff = []
 
@@ -350,6 +480,13 @@ class Annotation:
 
 
 class PathRepo:
+    """
+    Repository for storing the paths we are analysing.
+
+    This is used to help tools be aware of the files and folders that
+    should be processed.
+    """
+
     root_path: pathlib.Path
     python_path: frozenset[pathlib.Path]
     python_files: frozenset[pathlib.Path]
@@ -362,6 +499,19 @@ class PathRepo:
         python_files: set[pathlib.Path],
         python_module_path: set[pathlib.Path],
     ) -> None:
+        """
+        Create a PathRepo with the path lists.
+
+        :param root_path:
+            The root of the project, that paths are relative to.
+        :param python_path:
+            The roots of python source files, which will contain top-level modules and packages.
+        :param python_files:
+             A list of all python source files. Primarily for outputting 'passed' annotations.
+        :param python_module_path:
+            List of paths to folders that contain python packages,
+            excluding namespace packages (which are empty and confuse some tools).
+        """
         self.root_path = root_path
         self.python_path = frozenset(python_path)
         self.python_files = frozenset(python_files)
