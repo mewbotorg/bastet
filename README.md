@@ -47,11 +47,9 @@ pip install bastet
 
 bastet        # Runs all the tests
 
-# You can also run just some sections
-bastet format # Automated formatting, using black/isort/ruff
-bastet lint   # Code style and type linting, using black/flake8/ruff/mypy/pylint
-bastet audit  # Audit and security checks, using bandit
+# You can also run just some tools or sections
 bastet --help # See the command line options
+bastet --skip format pylint
 ```
 
 We also recommend that you set up `mewbot-prefilght` as a
