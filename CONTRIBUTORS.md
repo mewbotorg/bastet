@@ -1,5 +1,5 @@
 <!--
-SPDX-FileCopyrightText: 2021 - 2023 Mewbot Developers <mewbot@quicksilver.london>
+SPDX-FileCopyrightText: 2021 - 2024 Mewbot Developers <mewbot@quicksilver.london>
 
 SPDX-License-Identifier: CC-BY-4.0
 -->

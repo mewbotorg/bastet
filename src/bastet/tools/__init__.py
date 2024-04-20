@@ -1,5 +1,5 @@
-# SPDX-FileCopyrightText: 2023 Mewbot Developers <mewbot@quicksilver.london>
-
+# SPDX-FileCopyrightText: 2023 - 2024 Mewbot Developers <mewbot@quicksilver.london>
+#
 # SPDX-License-Identifier: BSD-2-Clause
 
 """
