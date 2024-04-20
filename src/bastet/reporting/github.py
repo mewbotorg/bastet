@@ -2,6 +2,10 @@
 #
 # SPDX-License-Identifier: BSD-2-Clause
 
+"""
+GitHub reporter: outputs raw tool output, plus summary of annotations.
+"""
+
 from __future__ import annotations as _future_annotations
 
 from collections.abc import Iterable
@@ -16,7 +20,15 @@ from .abc import Reporter, ReportInstance, ReportStreams
 
 
 class GitHubReporter(Reporter):
+    """
+    GitHub reporter: outputs raw tool output, plus summary of annotations.
+    """
+
     async def create(self, tool: Tool) -> ReportInstance:
+        """
+        Setups up the raw reporter (but folded) report for this tool.
+        """
+
         return _GitHubReporter(tool)
 
     async def summarise(self, results: ToolResults) -> None:
@@ -92,7 +104,9 @@ class GitHubReporter(Reporter):
         return f"{header}\n{textwrap.indent(issue.message.strip(), '  ')}"
 
     async def close(self) -> None:
-        pass
+        """
+        No cleanup needed (we only output stdout).
+        """
 
 
 class _GitHubReporter(ReportInstance):

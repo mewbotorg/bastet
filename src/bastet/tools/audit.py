@@ -60,20 +60,22 @@ class Bandit(Tool):
         """
         return {}
 
-    async def process_results(self, stream: asyncio.StreamReader) -> AsyncIterable[Annotation]:
-        """Processes 'bandits' output in to annotations."""
+    async def process_results(self, data: asyncio.StreamReader) -> AsyncIterable[Annotation]:
+        """
+        Processes 'bandits' output in to annotations.
+        """
 
-        raw_data = await stream.read()
+        raw_data = await data.read()
 
         try:
-            data = json.loads(raw_data)
+            results = json.loads(raw_data)
         except json.JSONDecodeError as err:
             raise OutputParsingError(expected="valid json", cause=err) from err
 
-        for error in data["errors"]:
+        for error in results["errors"]:
             yield Annotation(Status.EXCEPTION, None, "err", str(error))
 
-        for problem in data["results"]:
+        for problem in results["results"]:
             severity = problem["issue_severity"]
             confidence = problem["issue_confidence"]
 
@@ -88,7 +90,7 @@ class Bandit(Tool):
                 ),
             )
 
-        for file, metrics in data["metrics"].items():
+        for file, metrics in results["metrics"].items():
             if file == "_totals":
                 continue
 

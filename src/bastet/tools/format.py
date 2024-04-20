@@ -126,7 +126,7 @@ class _DiffProcessorMixin(Tool):
         [patch contents]
         ```
 
-        The initial `error:` line will be passed to the `_tokenise_error`
+        The initial `error:` line will be passed to the `_tokenize_error`
         abstract method to build out the outline of the annotation, which
         the diff will then be attached to.
         """
@@ -164,7 +164,8 @@ class _DiffProcessorMixin(Tool):
             yield last_annotation
 
     def _diff_header_to_annotation(self, file: pathlib.Path, line: str) -> Annotation:
-        _, old, new, _ = line.strip().split(" ", 3)
+        # [@@, old lines, new lines, @@]
+        _, _, new, _ = line.strip().split(" ", 3)
         row, add = new.split(",", 1)
 
         header = f"{self.name} change ({add} lines affected)"
@@ -285,7 +286,7 @@ class Black(_DiffProcessorMixin):
         if not error.startswith("cannot format "):
             return OutputParsingError(expected="cannot format", data=error)
 
-        file, reason, line, char, context = error.removeprefix("cannot format ").split(":", 4)
+        file, reason, line, char, _ = error.removeprefix("cannot format ").split(":", 4)
 
         source = pathlib.Path(file.strip()), int(line.strip()), int(char.strip())
 

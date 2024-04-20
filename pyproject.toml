@@ -35,32 +35,32 @@ classifiers=[
 # Terminal colouring and formatting
 dependencies = [
     # Output Libraries
-    "clint>=0.5.1",
-    "gitignore-parser>=0.1.11",
+    "clint >=0.5.1",
+    "gitignore-parser >=0.1.11",
 
     # Copyright linting toolchain
-    "reuse>=2.1",
+    "reuse >=2.1",
 
     # Python Linting toolchain
-    "black>=23.1.0",
-    "flake8>=6.0.0",
-    "pylint>=2.16.0",
-    "pydocstyle>=6.3.0",
-    "isort>=5.12.0",
-    "ruff>=0.2.1",
-    "mypy>=0.991",
+    "black >=23.1.0",
+    "flake8 >=6.0.0",
+    "pylint >=2.16.0",
+    "pydocstyle >=6.3.0",
+    "isort >=5.12.0",
+    "ruff >=0.2.1",
+    "mypy >=0.991",
 
     # Security Audit toolchain
-    "bandit>=1.7.5",
+    "bandit >=1.7.5",
 ]
 
 [project.optional-dependencies]
 dev = [
     # Testing toolchain
-    "pytest>=7.1.1",
-    "pytest-asyncio~=0.21.1",
-    "pytest-cov>=3.0.0",
-    "pytest-xdist>=2.5.0",
+    "pytest >=7.1.1",
+    "pytest-asyncio ~=0.21.1",
+    "pytest-cov >=3.0.0",
+    "pytest-xdist >=2.5.0",
 ]
 
 [tool.setuptools.dynamic.version]
@@ -68,6 +68,10 @@ file = "version"
 
 [project.scripts]
 bastet = "bastet.__main__:main"
+
+[tool.bastet]
+
+disable = []
 
 [tool.black]
 
@@ -79,13 +83,12 @@ target-version = "py311"
 
 [tool.ruff.lint]
 
-select = ["ALL", "D"]
+select = ["ALL", "TD"]
 ignore = [
     "D200",  # Single line doc strings do not need to fit on a single line in code.
-    "D203",  # Use Zero blank lines before docstring (D211).
     "D202",  # Allow a blank line after docstring.
+    "D203",  # Use Zero blank lines before docstring, as per D211.
     "D212",  # Multi-line docstring summary should start at the second line.
-    "D401",  # Docs strings do not have to be in the imperative mood.
 
     "ANN101", "ANN102", # Don't require type annotations for 'self' and 'cls'
 
@@ -100,7 +103,7 @@ convention = "google"
 [tool.ruff.lint.isort]
 
 # Section ordering
-section-order = ['future', 'typing', "standard-library", "third-party", "first-party", "local-folder"]
+section-order = ["future", "typing", "standard-library", "third-party", "first-party", "local-folder"]
 sections = {"typing" = ["typing", "types", "typing_extensions", "collections.abc"]}
 required-imports  = ["from __future__ import annotations as _future_annotations"]
 
@@ -109,7 +112,7 @@ profile = "black"
 py_version = 311
 
 # Section ordering
-sections = ['FUTURE', 'TYPING', 'STDLIB', 'THIRDPARTY', 'FIRSTPARTY', 'LOCALFOLDER']
+sections = ["FUTURE", "TYPING", "STDLIB", "THIRDPARTY", "FIRSTPARTY", "LOCALFOLDER"]
 known_typing = ["typing", "types", "typing_extensions", "collections.abc"]
 
 # Always have deferred annotation processing. We rename it so we can use 'annotations' as a name.

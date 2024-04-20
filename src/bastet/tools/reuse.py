@@ -110,81 +110,28 @@ class Reuse(Tool):
             yield _MISSING_LICENSE
 
         generator = (
-            self.process_annotate(data)
+            self._process_annotate(data)
             if self.domain == ToolDomain.FORMAT
-            else self.process_lint(data)
+            else self._process_lint(data)
         )
         async for annotation in generator:
             if annotation:
                 yield annotation
 
-    def _with_prefix(self, line: bytes, prefix: bytes) -> pathlib.Path | None:
-        """
-        Get the path following a specific prefix message.
-
-        This function takes in an output line, checks if it begins with a prefix.
-        If it does, that prefix is removed and the rest of the line is treated as
-        a path.
-        If the prefix is not present, None is returned.
-
-        ```python
-        input = "Fixed: bar/foo.py"
-        _with_prefix(input, "Fixed:")   # returns Path(bar/foo.py)
-        _with_prefix(input, "Updated:") # returns None
-        ```
-        """
-
-        if not line.startswith(prefix):
-            return None
-
-        file = line.removeprefix(prefix).strip()
-
-        return pathlib.Path(file.decode("utf-8", errors="replace"))
-
-    def _with_prefix_and_note(
-        self,
-        line: bytes,
-        prefix: bytes,
-    ) -> tuple[pathlib.Path, str] | None:
-        """
-        Get the path and note following a specific prefix message.
-
-        This function takes in an output line, checks if it begins with a prefix.
-        If it does, that prefix is removed and the rest of the line is treated as
-        a path in single quotes followed by whitespace and a note.
-        If the prefix is not present, None is returned.
-
-        ```python
-        input = "Skipped file 'bar/foo.py' in gitignore"
-        _with_prefix(input, "Skipped file") # returns (Path(bar/foo.py), "in gitignore")
-        _with_prefix(input, "Updated:") # returns None
-        ```
-        """
-
-        if not line.startswith(prefix):
-            return None
-
-        line = line.removeprefix(prefix).strip()
-
-        if b"'" not in line:
-            return None
-
-        file, _, info = line.decode("utf-8", errors="replace").lstrip("'").partition("'")
-
-        return pathlib.Path(file), info.strip()
-
-    async def process_annotate(
-        self,
+    @staticmethod
+    async def _process_annotate(
         data: asyncio.StreamReader,
     ) -> AsyncIterable[Annotation | ToolError]:
-        """Process the output of the `reuse annotate` command."""
+        """
+        Process the output of the `reuse annotate` command.
+        """
 
         while line := await data.readline():
-            if info := self._with_prefix_and_note(line, b"Skipped file "):
+            if info := _with_prefix_and_note(line, b"Skipped file "):
                 yield Annotation(Status.PASSED, (info[0], None, None), "reuse", info[1])
                 continue
 
-            if path := self._with_prefix(line, b"Successfully changed header of "):
+            if path := _with_prefix(line, b"Successfully changed header of "):
                 yield Annotation(
                     Status.FIXED,
                     (path, None, None),
@@ -195,7 +142,7 @@ class Reuse(Tool):
 
             yield OutputParsingError(data=line.decode("utf-8", errors="replace"))
 
-    async def process_lint(
+    async def _process_lint(
         self,
         data: asyncio.StreamReader,
     ) -> AsyncIterable[Annotation | ToolError]:
@@ -390,6 +337,59 @@ def _template_missing_license(license_name: str, file: pathlib.Path) -> Annotati
         f"Missing License {license_name}",
         f"The license information for {license_name} should be in the LICENSES folder.",
     )
+
+
+def _with_prefix(line: bytes, prefix: bytes) -> pathlib.Path | None:
+    """
+    Get the path following a specific prefix message.
+
+    This function takes in an output line, checks if it begins with a prefix.
+    If it does, that prefix is removed and the rest of the line is treated as
+    a path.
+    If the prefix is not present, None is returned.
+
+    ```python
+    input = "Fixed: bar/foo.py"
+    _with_prefix(input, "Fixed:")   # returns Path(bar/foo.py)
+    _with_prefix(input, "Updated:") # returns None
+    ```
+    """
+
+    if not line.startswith(prefix):
+        return None
+
+    file = line.removeprefix(prefix).strip()
+
+    return pathlib.Path(file.decode("utf-8", errors="replace"))
+
+
+def _with_prefix_and_note(line: bytes, prefix: bytes) -> tuple[pathlib.Path, str] | None:
+    """
+    Get the path and note following a specific prefix message.
+
+    This function takes in an output line, checks if it begins with a prefix.
+    If it does, that prefix is removed and the rest of the line is treated as
+    a path in single quotes followed by whitespace and a note.
+    If the prefix is not present, None is returned.
+
+    ```python
+    input = "Skipped file 'bar/foo.py' in gitignore"
+    _with_prefix(input, "Skipped file") # returns (Path(bar/foo.py), "in gitignore")
+    _with_prefix(input, "Updated:") # returns None
+    ```
+    """
+
+    if not line.startswith(prefix):
+        return None
+
+    line = line.removeprefix(prefix).strip()
+
+    if b"'" not in line:
+        return None
+
+    file, _, info = line.decode("utf-8", errors="replace").lstrip("'").partition("'")
+
+    return pathlib.Path(file), info.strip()
 
 
 __all__ = ["Reuse"]

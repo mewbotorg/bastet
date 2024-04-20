@@ -4,15 +4,7 @@
 
 [tool.bastet]
 
-
-
-[tool.black]
-
-line-length = 94
-
-[tool.ruff]
-line-length = 94
-target-version = "py311"
+disable = ["isort", "black"]
 
 [tool.ruff.lint]
 
@@ -30,35 +22,3 @@ ignore = [
 
     "EM101",  # Exceptions can use string literals
 ]
-
-[tool.ruff.lint.isort]
-
-# Section ordering
-section-order = ['future', 'typing', "standard-library", "third-party", "first-party", "local-folder"]
-sections = {"typing" = ["typing", "types", "typing_extensions", "collections.abc"]}
-
-[tool.isort]
-profile = "black"
-py_version = 311
-
-# Section ordering
-sections = ['FUTURE', 'TYPING', 'STDLIB', 'THIRDPARTY', 'FIRSTPARTY', 'LOCALFOLDER']
-known_typing = ["typing", "types", "typing_extensions", "collections.abc"]
-
-# Always have deferred annotation processing. We rename it so we can use 'annotations' as a name.
-add_imports = ["from __future__ import annotations as _future_annotations"]
-
-# 9 is black compatible, but does not look great
-multi_line_output = 3
-
-[tool.flake8]
-
-max-complexity = 8
-max-line-length = 100
-
-[tool.pydocstyle]
-
-convention="pep257"
-add-ignore=["D200", "D202", "D401"]
-add-select=["D204", "D213", "D416", "D417"]
-ignore-self-only-init=true

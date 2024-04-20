@@ -3,30 +3,33 @@
 # SPDX-License-Identifier: BSD-2-Clause
 
 """
-Reporting subsystem for Bastet.
+Reporting system for Bastet.
 
-Reporters take the output from Tools (status, annotations, and exceptions)
-and generate reports for machine or human consumption.
+The reporting section of Bastet controls how the information
+obtained from tools is reported to the user. Each Reporter
+selected by the configuration gets give the raw and processed
+(status, annotations, and exceptions) output from each tool,
+along with a full run summary, and will output a formatted report
+for machine or human consumption.
 """
 
 from __future__ import annotations as _future_annotations
 
 from .abc import Reporter, ReportHandler
 from .console import AnnotationReporter
+from .file import FileReporter, SonarReporter
 from .github import GitHubReporter
-from .sonar import Sonar
 
 reporters: dict[str, type[Reporter]] = {
     "github": GitHubReporter,
     "note": AnnotationReporter,
-    "sonar": Sonar,
+    "file": FileReporter,
+    "sonar": SonarReporter,
 }
 
 
 __all__ = [
     "reporters",
     "ReportHandler",
-    "GitHubReporter",
-    "AnnotationReporter",
     "Reporter",
 ]

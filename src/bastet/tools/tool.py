@@ -16,7 +16,7 @@ import asyncio
 import dataclasses
 import enum
 import pathlib
-from collections import Counter
+from collections import Counter  # pylint: disable=ungrouped-imports
 
 from .exceptions import InvalidDomainError, ProcessError, ToolError
 
@@ -68,15 +68,21 @@ class Status(enum.Enum):
     EXCEPTION = "Error"
 
     def __lt__(self, other: Status) -> bool:
-        """Total ordering for Status enum."""
+        """
+        Total ordering for Status enum.
+        """
         return _STATUS_ORDERING[self] < _STATUS_ORDERING[other]
 
     def __gt__(self, other: Status) -> bool:
-        """Total ordering for Status enum."""
+        """
+        Total ordering for Status enum.
+        """
         return _STATUS_ORDERING[self] > _STATUS_ORDERING[other]
 
     def __ge__(self, other: Status) -> bool:
-        """Total ordering for Status enum."""
+        """
+        Total ordering for Status enum.
+        """
         return other == self or self.__gt__(other)
 
 
@@ -154,22 +160,30 @@ class Tool(abc.ABC):
         self._paths = paths
 
     def __repr__(self) -> str:
-        """Tool domain and info for logging and debugging."""
+        """
+        Tool domain and info for logging and debugging.
+        """
         return f"<{self._domain}:{self.name}@{id(self)}>"
 
     @property
     def name(self) -> str:
-        """The name of the tool for logging."""
+        """
+        The name of the tool for logging.
+        """
         return self.__class__.__name__
 
     @property
     def description(self) -> str:
-        """A summary of the tool."""
+        """
+        A summary of the tool.
+        """
         return self.__class__.__doc__ or self.__class__.__name__
 
     @property
     def domain(self) -> ToolDomain:
-        """The domain this instance of the tool is running in."""
+        """
+        The domain this instance of the tool is running in.
+        """
         return self._domain
 
     @abc.abstractmethod
@@ -226,7 +240,7 @@ class Tool(abc.ABC):
         return {0}
 
 
-class ToolResults:
+class ToolResults:  # pylint: disable=too-few-public-methods
     """
     Result information for a collection of Tool.
 
@@ -353,7 +367,7 @@ class Annotation:
     description: str | None
     diff: list[str] | None
 
-    def __init__(  # noqa: PLR0913 - 6 args is "ok" here.
+    def __init__(  # pylint: disable=R0913 # noqa: PLR0913 - 6 args is "ok" here.
         self,
         status: Status,
         source: tuple[pathlib.Path, int | None, int | None] | pathlib.Path | None,
@@ -437,7 +451,9 @@ class Annotation:
         )
 
     def __lt__(self, other: Annotation) -> bool:
-        """Sorts annotations by file path and then line number."""
+        """
+        Sorts annotations by file path and then line number.
+        """
 
         if not isinstance(other, Annotation):
             return False
@@ -480,40 +496,26 @@ class Annotation:
         self.diff.append(line)
 
 
+@dataclasses.dataclass(frozen=True)
 class PathRepo:
     """
     Repository for storing the paths we are analysing.
 
     This is used to help tools be aware of the files and folders that
     should be processed.
+
+    :param root_path:
+        The root of the project, that paths are relative to.
+    :param python_path:
+        The roots of python source files, which will contain top-level modules and packages.
+    :param python_files:
+         A list of all python source files. Primarily for outputting 'passed' annotations.
+    :param python_module_path:
+        List of paths to folders that contain python packages,
+        excluding namespace packages (which are empty and confuse some tools).
     """
 
     root_path: pathlib.Path
     python_path: frozenset[pathlib.Path]
     python_files: frozenset[pathlib.Path]
     python_module_path: frozenset[pathlib.Path]
-
-    def __init__(
-        self,
-        root_path: pathlib.Path,
-        python_path: set[pathlib.Path],
-        python_files: set[pathlib.Path],
-        python_module_path: set[pathlib.Path],
-    ) -> None:
-        """
-        Create a PathRepo with the path lists.
-
-        :param root_path:
-            The root of the project, that paths are relative to.
-        :param python_path:
-            The roots of python source files, which will contain top-level modules and packages.
-        :param python_files:
-             A list of all python source files. Primarily for outputting 'passed' annotations.
-        :param python_module_path:
-            List of paths to folders that contain python packages,
-            excluding namespace packages (which are empty and confuse some tools).
-        """
-        self.root_path = root_path
-        self.python_path = frozenset(python_path)
-        self.python_files = frozenset(python_files)
-        self.python_module_path = frozenset(python_module_path)

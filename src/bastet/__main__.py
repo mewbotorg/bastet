@@ -21,7 +21,7 @@ import asyncio
 import logging
 import os
 
-from . import ReportHandler, ToolRunner, config
+from . import BastetRunner, ReportHandler, config
 from .tools import Annotation
 
 
@@ -59,7 +59,7 @@ def main() -> None:
     reporter = ReportHandler(logger, *[reporter() for reporter in options.reporters])
 
     # Build and run the async runner.
-    runner = ToolRunner(reporter, options)
+    runner = BastetRunner(options, reporter)
     asyncio.run(runner.run())
 
 

@@ -43,13 +43,13 @@ class _PylintOutputMixin(Tool, abc.ABC):
             if line.startswith(("*" * 10, "-" * 10, "Your code has been rated")):
                 continue
 
-            if to_yield := self.foo(line):
+            if to_yield := self._process_line(line):
                 yield to_yield
 
         if self._annotation:
             yield self._annotation
 
-    def foo(self, line: str) -> Annotation | ToolError | None:
+    def _process_line(self, line: str) -> Annotation | ToolError | None:
         annotation = self._annotation
 
         try:
@@ -65,11 +65,14 @@ class _PylintOutputMixin(Tool, abc.ABC):
             code, _, error = error.strip().partition(" ")
             code = code.strip(":")
 
+            # Start a new annotation
             self._annotation = Annotation(Status.ISSUE, source, code, error)
+
         except ValueError as e:
             return OutputParsingError(data=line, cause=e)
-        else:
-            return annotation
+
+        # Return the previous complete annotation (if there was one)
+        return annotation
 
 
 class Flake8(_PylintOutputMixin, Tool):
@@ -235,66 +238,3 @@ class PyLint(_PylintOutputMixin, Tool):
         Environment variables to set when calling this tool.
         """
         return {}
-
-
-class PyDocStyle(Tool):
-    """
-    Runs 'pydocstyle', which tests python doc blocks.
-
-    pydocstyle checks for the existence and format of doc strings in all
-    python modules, classes, and methods. These will have to be formatted
-    with a single headline, arguments, return values and any extra info.
-    """
-
-    @classmethod
-    def domains(cls) -> set[ToolDomain]:
-        """
-        PyDocStyle: linting for doc strings (like this one).
-        """
-        return {ToolDomain.LINT}
-
-    def get_command(self) -> list[str | pathlib.Path]:
-        """
-        Command string to execute (including arguments).
-        """
-        return ["pydocstyle", *self._paths.python_path]
-
-    def get_environment(self) -> dict[str, str]:
-        """
-        Environment variables to set when calling this tool.
-        """
-        return {}
-
-    async def process_results(
-        self,
-        data: asyncio.StreamReader,
-    ) -> AsyncIterable[Annotation | ToolError]:
-        """
-        Process the standard output of pydocstyle, and output annotations.
-
-        The pydocstyle format is:
-        ```
-        src/bastet/tools/tool.py:37 in public method `__lt__`:
-                D105: Missing docstring in magic method
-        ```
-        """
-
-        while not data.at_eof():
-            header = (await data.readline()).decode("utf-8")
-
-            if ":" not in header:
-                continue
-
-            try:
-                file, _, header = header.partition(":")
-                line, _, _ = header.partition(" ")
-
-                source = (pathlib.Path(file), int(line), None)
-                error = (await data.readline()).decode("utf-8").strip()
-                code, _, error = error.partition(": ")
-
-                yield Annotation(Status.ISSUE, source, code, error)
-            except ValueError as e:
-                yield OutputParsingError(cause=e)
-            except StopIteration:
-                yield OutputParsingError("no data after header")

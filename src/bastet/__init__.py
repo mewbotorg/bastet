@@ -2,16 +2,18 @@
 #
 # SPDX-License-Identifier: BSD-2-Clause
 
-"""Development tools and helpers."""
+"""
+Development tools and helpers.
+"""
 
 from __future__ import annotations as _future_annotations
 
-from .runner import ReportHandler, ToolRunner
+from .runner import BastetRunner, ReportHandler
 from .tools import Tool, ToolDomain, get_available_tools
 
 __all__ = [
     "tools",
-    "ToolRunner",
+    "BastetRunner",
     "Tool",
     "ToolDomain",
     "ReportHandler",

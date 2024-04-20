@@ -5,9 +5,9 @@
 """
 Bastet Configuration.
 
- - Options class for storing and passing runtime options.
- - Tooling for gathering files that are "in the project".
- - Tooling for reading the configuration toml.
+- Options class for storing and passing runtime options.
+- Tooling for gathering files that are "in the project".
+- Tooling for reading the configuration toml.
 """
 
 from __future__ import annotations as _future_annotations
@@ -33,12 +33,9 @@ GITIGNORE_NAME = ".gitignore"
 GitIgnore = Callable[[Path], bool]
 
 
-class BastetConfiguration:
+class BastetConfiguration:  # pylint: disable=too-few-public-methods
     """
     Configuration for a Bastet run.
-
-    :property config:
-        The configuration loaded from the pyproject.toml configuration file.
     """
 
     config: dict[str, Any]
@@ -94,7 +91,7 @@ class BastetConfiguration:
         # "skip" can only be specified on the CLI. The two lists are merged.
         disabled = args.disable or self._config_list("disable", [])
         disabled += args.skip or []
-        self.skip_domains, self.skip_tools = self._tools_or_domains(disabled)
+        self.skip_domains, self.skip_tools = _tools_or_domains(disabled)
         logger.debug("disabled domains: %s", self.skip_domains)
         logger.debug("disabled tools: %s", self.skip_tools)
 
@@ -110,25 +107,6 @@ class BastetConfiguration:
         folders = PathGatherer(logger, root_dir, initial_folders)
         self.folders = folders.gather(exclude, pypath_filter)
 
-    def _tools_or_domains(self, items: Iterable[str]) -> tuple[set[ToolDomain], set[str]]:
-        """
-        Splits a list of config references into a set of domains and a set of tools.
-        """
-        domains = set()
-        tools = set()
-
-        _domains = {domain.lower(): domain for domain in ToolDomain}
-
-        for _item in items:
-            item = _item.lower()
-
-            if item in _domains:
-                domains.add(_domains[item])
-            else:
-                tools.add(item)
-
-        return domains, tools
-
     def _config_list(self, key: str, default: list[str]) -> list[str]:
         """
         Get a list from the TOML config, or a default if not set or not a list.
@@ -141,8 +119,6 @@ class BastetConfiguration:
         if isinstance(value, list):
             return value
 
-        # TODO: make this happen again (in a config parsing/building class
-        # logger warning("Config option %s should be a list, got %s", key, type(value))
         return default
 
     @property
@@ -197,19 +173,24 @@ def add_options(parser: argparse.ArgumentParser) -> argparse.ArgumentParser:
     return parser
 
 
-class PathGatherer:
+class PathGatherer:  # pylint: disable=too-few-public-methods
+    """
+    Tool for locating PYTHON_PATH and non-namespace python module roots.
+    """
+
     root: Path
     logger: logging.Logger
 
-    _initial_py_path: frozenset[Path]
     _potential_py_path: set[Path]
     _python_path: set[Path]
     _python_module_path: set[Path]
     _python_files: set[Path]
 
-    _pypath_selector: set[str]
-
     def __init__(self, logger: logging.Logger, root: Path, folders: list[Path]) -> None:
+        """
+        Tool for locating PYTHON_PATH and non-namespace python module roots.
+        """
+
         self.root = root.absolute()
         self.logger = logger
 
@@ -220,11 +201,26 @@ class PathGatherer:
         self._python_files = set()
 
     def gather(self, exclude: list[str], pypath_selector: set[str]) -> PathRepo:
+        """
+        Gathers the PYTHON_PATH and python module paths.
+
+        This considers:
+         - PYTHON_PATH should start at a folder with the name in pypath_selector
+           (e.g. 'src', 'tests').
+         - A module is defined by the presence of a .py file.
+         - A folder with a __init__.py is a module in itself, and can't be a PYTHON_PATH.
+         - Modules may be namespace modules, and not directly contain files.
+         - We should ignore everything in `.git`, `.hg`, and the files matching
+           the globs in `.gitignore` in the path or in `.git/info/exclude` in general.
+
+        The result is a PathRepo object listing the detected PYTHON_PATH and top-level
+        location of non-namespace modules, along with a complete list of .py files that
+        match them.
+        """
+
         self._potential_py_path = self._initial_path()
-        self._initial_py_path = frozenset(self._potential_py_path)
         self._python_path = set()
         self._python_module_path = set()
-        self._pypath_selector = pypath_selector
 
         self.logger.debug("Adding '.git' and '.hg' to gitignore list")
         _ignores = [lambda path: path.name in [".git", ".hg"]]
@@ -238,21 +234,22 @@ class PathGatherer:
             self.logger.debug("Adding %s to gitignore list", local_ignores)
             _ignores.append(gitignore_parser.parse_gitignore(local_ignores, self.root))
 
-        for root in self._initial_folders if self._initial_folders else [self.root]:
-            if not root.exists():
-                self.logger.warning("%s does not exist, can not scan", root)
+        locations_to_scan = self._initial_folders if self._initial_folders else [self.root]
+        for location in locations_to_scan:
+            if not location.exists():
+                self.logger.warning("%s does not exist, can not scan", location)
                 continue
 
-            self._scan_dir(root, _ignores)
+            self._scan_dir(location, _ignores, pypath_selector)
 
         self.logger.debug("PYTHON_PATH:      %s", self._python_path)
         self.logger.debug("Module Roots:     %s", self._python_module_path)
 
         return PathRepo(
             self.root,
-            self._python_path,
-            self._python_files,
-            self._python_module_path,
+            frozenset(self._python_path),
+            frozenset(self._python_files),
+            frozenset(self._python_module_path),
         )
 
     def _initial_path(self) -> set[Path]:
@@ -266,14 +263,14 @@ class PathGatherer:
 
         return paths
 
-    def _scan_dir(self, path: Path, ignores: list[GitIgnore]) -> None:
+    def _scan_dir(self, path: Path, ignores: list[GitIgnore], selector: set[str]) -> None:
         potential_gitignore = path / GITIGNORE_NAME
         if potential_gitignore.is_file():
             self.logger.debug("Adding %s to gitignore list", potential_gitignore)
             ignores = ignores.copy()
             ignores.append(gitignore_parser.parse_gitignore(potential_gitignore, path))
 
-        if path.name in self._pypath_selector and path not in self._potential_py_path:
+        if path.name in selector and path not in self._potential_py_path:
             self.logger.debug("Potential PYTHON_PATH: %s", path)
             self._potential_py_path.add(path)
 
@@ -282,7 +279,7 @@ class PathGatherer:
                 continue
 
             if file.is_dir():
-                self._scan_dir(file, ignores)
+                self._scan_dir(file, ignores, selector)
                 continue
 
             if file.name.endswith(".py"):
@@ -309,7 +306,7 @@ class PathGatherer:
             self.logger.debug("Unable to locate a potential PYTHONPATH for %s", file)
             return
 
-        if py_root not in self._initial_py_path:
+        if py_root not in self._initial_path():
             self.logger.warning("Detecting %s as a path, but not in PYTHON_PATH", py_root)
 
         self.logger.debug(
@@ -345,6 +342,26 @@ class PathGatherer:
             _closest = _path
 
         return _closest
+
+
+def _tools_or_domains(items: Iterable[str]) -> tuple[set[ToolDomain], set[str]]:
+    """
+    Splits a list of config references into a set of domains and a set of tools.
+    """
+    domains = set()
+    tools = set()
+
+    _domains = {domain.lower(): domain for domain in ToolDomain}
+
+    for _item in items:
+        item = _item.lower()
+
+        if item in _domains:
+            domains.add(_domains[item])
+        else:
+            tools.add(item)
+
+    return domains, tools
 
 
 def _load_config(logger: logging.Logger, folder: Path) -> dict[str, Any]:
@@ -399,6 +416,12 @@ def _find_pyproject(logger: logging.Logger) -> Path | None:
 
 
 def main() -> None:
+    """
+    Run the configuration under debug mode without CLI options.
+
+    Used for debugging the setup and work.
+    """
+
     logger = logging.getLogger("bastet.config")
 
     logger.debug("Auto detecting repo root")
@@ -412,9 +435,14 @@ def main() -> None:
     logger.debug("PYTHON_PATH selector set to %s", pypath_filter)
 
     folders = PathGatherer(logger, root, []).gather([], pypath_filter)
-    sorted_folders = sorted(map(str, folders.python_path), key=len, reverse=True)
 
+    sorted_folders = sorted(map(str, folders.python_path), key=len, reverse=True)
     sys.stdout.write("\n-- Python paths\n")
+    sys.stdout.write(os.pathsep.join(sorted_folders))
+    sys.stdout.write("\n")
+
+    sorted_folders = sorted(map(str, folders.python_module_path), key=len, reverse=True)
+    sys.stdout.write("\n-- Python base module paths\n")
     sys.stdout.write(os.pathsep.join(sorted_folders))
     sys.stdout.write("\n")
 

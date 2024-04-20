@@ -62,7 +62,7 @@ and examples).
 For completeness with the [SPDX](https://spdx.dev/) spec,
 files which have no meaningfully ownable content (generated lock files, gitignore files, etc.),
 are marked with the Creative Commons Universal Public Domain license,
-as per [the reuse.software recommendation](https://reuse.software/faq/#uncopyrightable).
+as per [the `reuse.software` recommendation](https://reuse.software/faq/#uncopyrightable).
 
 ## Code Style
 

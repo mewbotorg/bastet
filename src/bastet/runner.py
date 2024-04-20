@@ -2,11 +2,19 @@
 #
 # SPDX-License-Identifier: BSD-2-Clause
 
+"""
+Runs the Bastet toolchain based on the configuration.
+
+This takes in the configuration, and a report handler,
+and gathers all the permitted domains and tools.
+These are run, with the outputs sent to the reporting
+handler.
+"""
+
 from __future__ import annotations as _future_annotations
 
 import asyncio
 import os
-import pathlib
 import subprocess  # nosec
 
 from .config import BastetConfiguration
@@ -21,12 +29,30 @@ from .tools import (
 )
 
 
-class ToolRunner:
+class BastetRunner:  # pylint: disable=too-few-public-methods
+    """
+    Runs the Bastet toolchain based on the configuration.
+
+    This takes in the configuration, and a report handler,
+    and gathers all the permitted domains and tools.
+    These are run, with the outputs sent to the reporting
+    handler.
+    """
+
     reporter: ReportHandler
     config: BastetConfiguration
     timeout: int = 30
 
-    def __init__(self, reporter: ReportHandler, config: BastetConfiguration) -> None:
+    def __init__(self, config: BastetConfiguration, reporter: ReportHandler) -> None:
+        """
+        Runs the Bastet toolchain based on the configuration.
+
+        :param config:
+            Combined file and command line configuration.
+        :param reporter:
+            The selected reporting systems.
+        """
+
         self.reporter = reporter
         self.config = config
 
@@ -48,7 +74,7 @@ class ToolRunner:
                 tools = gather_tools(domain, self.config)
 
                 for tool in tools:
-                    command, exit_code, annotations, exceptions = await self._run_tool(tool)
+                    exit_code, annotations, exceptions = await self._run_tool(tool)
                     await results.record(tool, annotations, exceptions, exit_code)
 
         await self.reporter.summarise(results)
@@ -58,7 +84,7 @@ class ToolRunner:
     async def _run_tool(
         self,
         tool: Tool,
-    ) -> tuple[list[str | pathlib.Path], int, list[Annotation], list[ToolError]]:
+    ) -> tuple[int, list[Annotation], list[ToolError]]:
         """
         Helper function to run an external program as a check.
 
@@ -113,12 +139,15 @@ class ToolRunner:
         return_code = process.returncode
         return_code = return_code if return_code is not None else 1
 
-        return command, return_code, reporter.annotations, reporter.exceptions
+        return return_code, reporter.annotations, reporter.exceptions
 
 
 def gather_domains(config: BastetConfiguration) -> list[ToolDomain]:
     """
     Select all Domains we are going to run in this Bastet run.
+
+    :param config:
+        The configuration indicating what domains to skip.
     """
     return [d for d in ToolDomain if d not in config.skip_domains]
 
@@ -145,4 +174,4 @@ def gather_tools(domain: ToolDomain, config: BastetConfiguration) -> list[Tool]:
     ]
 
 
-__all__ = ["ReportHandler", "ToolRunner"]
+__all__ = ["ReportHandler", "BastetRunner"]

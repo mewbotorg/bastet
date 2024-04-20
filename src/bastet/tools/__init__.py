@@ -13,7 +13,7 @@ from __future__ import annotations as _future_annotations
 from .audit import Bandit
 from .exceptions import ToolError
 from .format import Black, ISort, Ruff
-from .lint import Flake8, MyPy, PyDocStyle, PyLint
+from .lint import Flake8, MyPy, PyLint
 from .reuse import Reuse
 from .tool import Annotation, Status, Tool, ToolDomain, ToolResult, ToolResults
 
@@ -33,7 +33,6 @@ def get_available_tools() -> list[type[Tool]]:
         MyPy,
         Flake8,
         PyLint,
-        PyDocStyle,
         Bandit,
     ]
 
