@@ -50,8 +50,12 @@ class Bandit(Tool):
             pyproject.absolute(),
             "--format",
             "json",
+            "--exclude",
+            ",".join(
+                [str(x) for x in self._paths.exclude_dirs],
+            ),
             "-r",
-            *self._paths.python_path,
+            self._paths.root_path,
         ]
 
     def get_environment(self) -> dict[str, str]:

@@ -95,7 +95,14 @@ class Flake8(_PylintOutputMixin, Tool):
         """
         Command string to execute (including arguments).
         """
-        return ["flake8", *self._paths.python_path]
+        return [
+            "flake8",
+            "--exclude",
+            ",".join(
+                [str(x) for x in self._paths.exclude_dirs],
+            ),
+            *self._paths.python_module_path,
+        ]
 
     def get_environment(self) -> dict[str, str]:
         """
@@ -231,7 +238,14 @@ class PyLint(_PylintOutputMixin, Tool):
         """
         Command string to execute (including arguments).
         """
-        return ["pylint", *self._paths.python_path]
+        return [
+            "pylint",
+            "--ignore-paths",
+            ",".join(
+                [str(x) for x in self._paths.exclude_dirs],
+            ),
+            *self._paths.python_module_path,
+        ]
 
     def get_environment(self) -> dict[str, str]:
         """

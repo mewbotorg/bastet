@@ -17,7 +17,6 @@ from typing import Any
 
 import argparse
 import logging
-import os
 import sys
 import tomllib
 from pathlib import Path
@@ -173,7 +172,7 @@ def add_options(parser: argparse.ArgumentParser) -> argparse.ArgumentParser:
     return parser
 
 
-class PathGatherer:  # pylint: disable=too-few-public-methods
+class PathGatherer:  # pylint: disable=too-few-public-methods,too-many-instance-attributes
     """
     Tool for locating PYTHON_PATH and non-namespace python module roots.
     """
@@ -185,6 +184,7 @@ class PathGatherer:  # pylint: disable=too-few-public-methods
     _python_path: set[Path]
     _python_module_path: set[Path]
     _python_files: set[Path]
+    _exclusion: set[Path]
 
     def __init__(self, logger: logging.Logger, root: Path, folders: list[Path]) -> None:
         """
@@ -199,6 +199,7 @@ class PathGatherer:  # pylint: disable=too-few-public-methods
         self._python_path = set()
         self._python_module_path = set()
         self._python_files = set()
+        self._exclusion = set()
 
     def gather(self, exclude: list[str], pypath_selector: set[str]) -> PathRepo:
         """
@@ -247,6 +248,7 @@ class PathGatherer:  # pylint: disable=too-few-public-methods
 
         return PathRepo(
             self.root,
+            frozenset(self._exclusion),
             frozenset(self._python_path),
             frozenset(self._python_files),
             frozenset(self._python_module_path),
@@ -260,6 +262,10 @@ class PathGatherer:  # pylint: disable=too-few-public-methods
             if self.root in path.parents:
                 self.logger.debug("Potential PYTHON_PATH: %s", path)
                 paths.add(path)
+
+        if self.root not in paths:
+            self.logger.debug("Potential PYTHON_PATH: %s", self.root)
+            paths.add(self.root)
 
         return paths
 
@@ -276,6 +282,8 @@ class PathGatherer:  # pylint: disable=too-few-public-methods
 
         for file in path.iterdir():
             if any(ignore(file) for ignore in ignores):
+                if file.is_dir():
+                    self._exclusion.add(file)
                 continue
 
             if file.is_dir():
@@ -436,14 +444,19 @@ def main() -> None:
 
     folders = PathGatherer(logger, root, []).gather([], pypath_filter)
 
+    sorted_folders = sorted(map(str, folders.exclude_dirs), key=len, reverse=True)
+    sys.stdout.write("\n-- Excluded paths\n")
+    sys.stdout.write("\n".join(sorted_folders))
+    sys.stdout.write("\n")
+
     sorted_folders = sorted(map(str, folders.python_path), key=len, reverse=True)
     sys.stdout.write("\n-- Python paths\n")
-    sys.stdout.write(os.pathsep.join(sorted_folders))
+    sys.stdout.write("\n".join(sorted_folders))
     sys.stdout.write("\n")
 
     sorted_folders = sorted(map(str, folders.python_module_path), key=len, reverse=True)
     sys.stdout.write("\n-- Python base module paths\n")
-    sys.stdout.write(os.pathsep.join(sorted_folders))
+    sys.stdout.write("\n".join(sorted_folders))
     sys.stdout.write("\n")
 
 

@@ -47,9 +47,22 @@ class Ruff(Tool):
         Command string to execute (including arguments).
         """
         if self.domain == ToolDomain.LINT:
-            return ["ruff", "check", "--output-format=json-lines", *self._paths.python_path]
+            return [
+                "ruff",
+                "check",
+                "--respect-gitignore",
+                "--output-format=json-lines",
+                self._paths.root_path,
+            ]
 
-        return ["ruff", "check", "--fix", "--fix-only", *self._paths.python_path]
+        return [
+            "ruff",
+            "check",
+            "--respect-gitignore",
+            "--fix",
+            "--fix-only",
+            self._paths.root_path,
+        ]
 
     def get_environment(self) -> dict[str, str]:
         """

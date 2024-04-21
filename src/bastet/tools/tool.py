@@ -506,6 +506,9 @@ class PathRepo:
 
     :param root_path:
         The root of the project, that paths are relative to.
+    :param exclude_dirs:
+        High level directories excluded by ignore files and the config.
+        This does not include individual files.
     :param python_path:
         The roots of python source files, which will contain top-level modules and packages.
     :param python_files:
@@ -516,6 +519,7 @@ class PathRepo:
     """
 
     root_path: pathlib.Path
+    exclude_dirs: frozenset[pathlib.Path]
     python_path: frozenset[pathlib.Path]
     python_files: frozenset[pathlib.Path]
     python_module_path: frozenset[pathlib.Path]
