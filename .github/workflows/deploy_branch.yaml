@@ -15,11 +15,13 @@ env:
   DEFAULT_PYTHON: "3.11"
 
 jobs:
-  publish:
+  build:
     name: Publish Packages
     runs-on: ubuntu-latest
 
-    if: always()
+    environment:
+      name: test-pypi
+      url: https://test.pypi.org/p/bastet
 
     permissions:
       id-token: write
@@ -49,7 +51,7 @@ jobs:
           name: builds
           path: dist
 
-      - name: Publish distribution packages to PyPI
+      - name: Publish to TestPyPI
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           repository-url: https://test.pypi.org/legacy/
