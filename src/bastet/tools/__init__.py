@@ -15,6 +15,7 @@ from .exceptions import ToolError
 from .format import Black, ISort, Ruff
 from .lint import Flake8, MyPy, PyLint
 from .reuse import Reuse
+from .test import PyTest
 from .tool import Annotation, Status, Tool, ToolDomain, ToolResult, ToolResults
 
 
@@ -34,6 +35,7 @@ def get_available_tools() -> list[type[Tool]]:
         Flake8,
         PyLint,
         Bandit,
+        PyTest,
     ]
 
 

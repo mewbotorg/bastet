@@ -57,7 +57,8 @@ class FileReporter(Reporter):
         else:
             name = f"{tool.name.lower()}.txt"
 
-        return FileReport(pathlib.Path("reports") / name)
+        # This needs a refactor, but we don't want to pass the full config to the reporters.
+        return FileReport(tool._paths.report_path / name)  # pylint: disable=W0212 # noqa: SLF001
 
     async def summarise(self, results: ToolResults) -> None:
         """

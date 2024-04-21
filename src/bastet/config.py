@@ -74,8 +74,6 @@ class BastetConfiguration:  # pylint: disable=too-few-public-methods
         # Load the config file version of the config.
         self.config = _load_config(logger, root_dir)
 
-        self.reports = root_dir / "reports"
-
         # Config the list of reporting engines to use
         self.reporters = set()
         for reporter in args.reporter or self._config_list("reporters", ["note"]):
@@ -248,6 +246,7 @@ class PathGatherer:  # pylint: disable=too-few-public-methods,too-many-instance-
 
         return PathRepo(
             self.root,
+            self.root / "reports",
             frozenset(self._exclusion),
             frozenset(self._python_path),
             frozenset(self._python_files),

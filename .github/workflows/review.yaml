@@ -44,17 +44,12 @@ jobs:
 
       - name: Install bastet
         shell: bash
-        run: pip install .[dev]
+        run: pip install '.[dev]'
 
       - name: Run bastet against bastet
         if: always()
         shell: bash
         run: bastet --skip format --reporter github sonar
-
-      - name: Run bastet's internal tests
-        if: always()
-        shell: bash
-        run: pytest --junit-xml=reports/junit-test.xml --cov-report=xml:reports/coverage.xml
 
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4

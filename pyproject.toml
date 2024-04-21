@@ -2,10 +2,6 @@
 #
 # SPDX-License-Identifier: CC0-1.0
 
-[build-system]
-requires = ["setuptools"]
-build-backend = "setuptools.build_meta"
-
 [project]
 name = "bastet"
 description="Bastet Python Developers Tools (https://github.com/mewbotorg/bastet)"
@@ -52,26 +48,34 @@ dependencies = [
 
     # Security Audit toolchain
     "bandit >=1.7.5",
-]
 
-[project.optional-dependencies]
-dev = [
     # Testing toolchain
     "pytest >=7.1.1",
     "pytest-asyncio ~=0.21.1",
     "pytest-cov >=3.0.0",
     "pytest-xdist >=2.5.0",
+    "defusedxml >=0.7.1",
 ]
 
-[tool.setuptools.dynamic.version]
-file = "version"
+[project.optional-dependencies]
+dev = [
+    "pylint-per-file-ignores",
+    "types-defusedxml",
+]
 
 [project.scripts]
 bastet = "bastet.__main__:main"
 
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.dynamic.version]
+file = "version"
+
 [tool.bastet]
 
-disable = []
+disable = ["isort"]
 
 [tool.black]
 
@@ -96,6 +100,15 @@ ignore = [
 
     "EM101",  # Exceptions can use string literals
 ]
+
+[tool.ruff.lint.per-file-ignores]
+
+"tests/**/test_*.py" = [
+    "S101", # assert statements are allowed in tests.
+    "SLF001" # allow direct access to "private" members in tests.
+]
+
+[tool.ruff.lint.flake8-bandit]
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
@@ -126,9 +139,25 @@ multi_line_output = 3
 max-complexity = 8
 max-line-length = 100
 
-[tool.pydocstyle]
+[tool.pylint.MASTER]
+load-plugins=["pylint_per_file_ignores"]
 
-convention="pep257"
-add-ignore=["D200", "D202", "D401"]
-add-select=["D204", "D213", "D416", "D417"]
-ignore-self-only-init=true
+[tool.pylint."MESSAGES CONTROL"]
+per-file-ignores = [
+    "/tests/:W0212",
+]
+
+[tool.bandit]
+assert_used = {skips = ['*_test.py', '*test_*.py']}
+
+[tool.coverage]
+
+report = {fail_under=80.0}
+html = {show_contexts=true}
+
+[tool.coverage.run]
+
+branch=true
+relative_files=true
+source=["src"]
+dynamic_context = "test_function"

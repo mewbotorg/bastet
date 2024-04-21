@@ -32,11 +32,14 @@ class ToolDomain(enum.StrEnum):
         Checks for coding and formatting errors.
     :param AUDIT:
         Checks for security and resilience errors.
+    :param TEST:
+        Unit, functional, and integration tests.
     """
 
     FORMAT = "Format"
     LINT = "Lint"
     AUDIT = "Audit"
+    TEST = "Test"
 
 
 class Status(enum.Enum):
@@ -341,7 +344,7 @@ class Annotation:
     @classmethod
     def _normalise_source(
         cls,
-        source: tuple[pathlib.Path, int | None, int | None] | pathlib.Path | None,
+        source: tuple[pathlib.Path | str, int | None, int | None] | str | pathlib.Path | None,
     ) -> tuple[pathlib.Path, int, int]:
         """
         Take all representations of the Source and encode as (file, line, column).
@@ -353,8 +356,14 @@ class Annotation:
         if not source:
             return cls._CWD, 0, 0
 
+        if isinstance(source, str):
+            source = pathlib.Path(source)
+
         if isinstance(source, pathlib.Path):
             return source.absolute(), 0, 0
+
+        if isinstance(source[0], str):
+            return pathlib.Path(source[0]).absolute(), source[1] or 0, source[2] or 0
 
         return source[0].absolute(), source[1] or 0, source[2] or 0
 
@@ -370,7 +379,7 @@ class Annotation:
     def __init__(  # pylint: disable=R0913 # noqa: PLR0913 - 6 args is "ok" here.
         self,
         status: Status,
-        source: tuple[pathlib.Path, int | None, int | None] | pathlib.Path | None,
+        source: tuple[pathlib.Path | str, int | None, int | None] | pathlib.Path | str | None,
         code: str,
         message: str,
         description: str | None = None,
@@ -506,6 +515,8 @@ class PathRepo:
 
     :param root_path:
         The root of the project, that paths are relative to.
+    :param root_path:
+        The path to write reports into.
     :param exclude_dirs:
         High level directories excluded by ignore files and the config.
         This does not include individual files.
@@ -519,6 +530,7 @@ class PathRepo:
     """
 
     root_path: pathlib.Path
+    report_path: pathlib.Path
     exclude_dirs: frozenset[pathlib.Path]
     python_path: frozenset[pathlib.Path]
     python_files: frozenset[pathlib.Path]

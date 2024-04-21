@@ -64,7 +64,7 @@ class BastetRunner:  # pylint: disable=too-few-public-methods
         """
 
         # Ensure the reporting location exists.
-        self.config.reports.mkdir(parents=True, exist_ok=True)
+        self.config.folders.report_path.mkdir(parents=True, exist_ok=True)
 
         results = ToolResults()
 

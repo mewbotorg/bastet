@@ -26,6 +26,7 @@ This mostly consist of tool chains for:
  - Managing license / copyright information. 
  - Running static analysis tooling.
  - Checking the code base against style requirements.
+ - Running unit tests.
 
 And it can output in a variety of ways:
 
@@ -45,14 +46,15 @@ and then run any of the toolchains.
 ```sh
 pip install bastet
 
-bastet        # Runs all the tests
+# Runs all the tools
+bastet
 
 # You can also run just some tools or sections
-bastet --help # See the command line options
+bastet --help
 bastet --skip format pylint
 ```
 
-We also recommend that you set up `mewbot-prefilght` as a
+We also recommend that you set up `bastet` as a
 [pre-commit or pre-push hook](https://git-scm.com/book/en/v2/Customizing-Git-Git-Hooks).
 
 ## Configuration
@@ -70,3 +72,19 @@ provides an implementation of.
 
 You can check what the configuration is doing with `--debug` the debug flag on
 a run, or by running `python -m bastet.config` to just run the configuration steps.
+
+### Integration with Sonar
+
+Using the `sonar` reporter will output a number of files into `reports`
+for Sonar to ingest.
+
+Ensure that Sonar is above to read the output from Bastet's run in your CI setup,
+and then configure the following properties in Sonar's admin or your
+`sonar-project.properties` file:
+
+```properties
+sonar.python.coverage.reportPaths=reports/coverage.xml
+sonar.python.xunit.reportPaths=reports/junit-*.xml
+sonar.python.ruff.reportPaths=reports/ruff.txt
+sonar.python.pylint.reportPaths=reports/pylint.txt
+```
