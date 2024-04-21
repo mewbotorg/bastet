@@ -40,7 +40,7 @@ jobs:
         with:
           python-version: ${{ matrix.version }}
           cache: pip
-          cache-dependency-path: requirements.txt
+          cache-dependency-path: pyproject.toml
 
       - name: Install bastet
         shell: bash
