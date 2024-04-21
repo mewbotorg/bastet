@@ -7,12 +7,19 @@ name: Publish to Test PyPI
 on:
   - push
 
+concurrency:
+  group: publish-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   publish:
     name: Publish Packages
     runs-on: ubuntu-latest
 
     if: always()
+
+    permissions:
+      id-token: write
 
     steps:
       - name: Checkout
@@ -43,5 +50,4 @@ jobs:
       - name: Publish distribution packages to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
-          password: ${{ secrets.PYPI_TEST_API_KEY }}
           repository-url: https://test.pypi.org/legacy/
