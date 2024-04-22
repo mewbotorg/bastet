@@ -295,7 +295,7 @@ class PathGatherer:  # pylint: disable=too-few-public-methods,too-many-instance-
     def _process_python_file(self, file: Path) -> None:
         self._python_files.add(file)
 
-        if self._add_path(self._python_module_path, file.parent):
+        if self._add_path(self._python_module_path, file.parent, remove_children=True):
             self.logger.debug("Marking %s as a module path", file.parent)
 
         if self._closest_relative(self._python_path, file):
@@ -325,7 +325,7 @@ class PathGatherer:  # pylint: disable=too-few-public-methods,too-many-instance-
         self._python_path.add(py_root)
 
     @staticmethod
-    def _add_path(paths: set[Path], path: Path) -> bool:
+    def _add_path(paths: set[Path], path: Path, *, remove_children: bool) -> bool:
         if path in paths:
             return False
 
@@ -333,7 +333,11 @@ class PathGatherer:  # pylint: disable=too-few-public-methods,too-many-instance-
             if path.is_relative_to(_path):
                 return False
 
+        if remove_children:
+            paths.difference_update({x for x in paths if x.is_relative_to(path)})
+
         paths.add(path)
+
         return True
 
     @staticmethod

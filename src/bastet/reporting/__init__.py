@@ -16,6 +16,7 @@ for machine or human consumption.
 from __future__ import annotations as _future_annotations
 
 from .abc import Reporter, ReportHandler
+from .codeclimate import CodeClimate
 from .console import AnnotationReporter
 from .file import FileReporter, SonarReporter
 from .github import GitHubReporter
@@ -25,6 +26,8 @@ reporters: dict[str, type[Reporter]] = {
     "note": AnnotationReporter,
     "file": FileReporter,
     "sonar": SonarReporter,
+    "codeclimate": CodeClimate,
+    "gitlab": CodeClimate,
 }
 
 

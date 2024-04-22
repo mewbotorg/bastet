@@ -185,6 +185,8 @@ class ToolReport:
 
         # Collect all requested streams from reporters
         streams = await gather(*(reporter.start() for reporter in self._reporters))
+        # Handle the case where no reporter does per-tool reports.
+        streams.append(ReportStreams(None, None, None, None))
         # Organise them into lists for each type of stream
         stdout, stderr, annotation_handlers, exception_handlers = zip(*streams, strict=True)
 
@@ -201,7 +203,7 @@ class ToolReport:
         stderr_task = mirror_pipe(self._stderr, *filter(present, stderr))
 
         # Set up the tool's process_results function, which generates Annotations and ToolErrors.
-        note_source = self._tool.process_results(results_reader)
+        note_source = self._annotate_tool(self._tool.process_results(results_reader))
         notes_task = self.mirror_notes(
             note_source,
             list(filter(present, annotation_handlers)),
@@ -215,6 +217,15 @@ class ToolReport:
             loop.create_task(stderr_task),
             loop.create_task(notes_task),
         ]
+
+    async def _annotate_tool(
+        self,
+        source: AsyncIterable[Annotation | ToolError],
+    ) -> AsyncIterable[Annotation | ToolError]:
+        async for item in source:
+            if isinstance(item, Annotation):
+                item.tool = self._tool
+            yield item
 
     async def __aexit__(
         self,
