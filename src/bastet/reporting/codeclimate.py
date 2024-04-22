@@ -1,4 +1,5 @@
 # SPDX-FileCopyrightText: 2024 Mewbot Developers <mewbot@quicksilver.london>
+# SPDX-FileContributor: Benedict Harcourt <benedict.harcourt@futurenet.com>
 #
 # SPDX-License-Identifier: BSD-2-Clause
 

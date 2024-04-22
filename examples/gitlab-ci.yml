@@ -1,6 +1,8 @@
 # SPDX-FileCopyrightText: 2024 Mewbot Developers <mewbot@quicksilver.london>
+# SPDX-FileContributor: Benedict Harcourt <benedict.harcourt@futurenet.com>
 #
-# SPDX-License-Identifier: BSD-2-Clause
+# SPDX-License-Identifier: CC0-1.0
+# This example file may be reproduced, edited or as-is, for any purpose.
 
 bastet:
   image: python:3.12-slim
