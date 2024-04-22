@@ -88,3 +88,9 @@ sonar.python.xunit.reportPaths=reports/junit-*.xml
 sonar.python.ruff.reportPaths=reports/ruff.txt
 sonar.python.pylint.reportPaths=reports/pylint.txt
 ```
+
+### Integration with Gitlab
+
+Bastet can produce up to three reports that GitLab can directly integrate into
+merge requests (code quality, test results, and coverage) using the `gitlab`
+reporter. A sample CI stage can be found in [`examples/gitlab-ci.yml`](examples/gitlab-ci.yml).

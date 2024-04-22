@@ -20,6 +20,7 @@ import argparse
 import asyncio
 import logging
 import os
+import sys
 
 from . import BastetRunner, ReportHandler, config
 from .tools import Annotation
@@ -60,7 +61,8 @@ def main() -> None:
 
     # Build and run the async runner.
     runner = BastetRunner(options, reporter)
-    asyncio.run(runner.run())
+    results = asyncio.run(runner.run())
+    sys.exit(0 if results.success else 1)
 
 
 if __name__ == "__main__":

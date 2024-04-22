@@ -1,0 +1,28 @@
+# SPDX-FileCopyrightText: 2024 Mewbot Developers <mewbot@quicksilver.london>
+#
+# SPDX-License-Identifier: BSD-2-Clause
+
+bastet:
+  image: python:3.12-slim
+  script:
+    - pip install --editable '.' bastet
+    # The reuse script has some issues in gitlab CI (https://github.com/mewbotorg/bastet/issues/2)
+    - bastet --skip format reuse --report note gitlab
+
+  variables:
+    PIP_CACHE_DIR: "${CI_PROJECT_DIR}/.cache/pip"
+  cache:
+    paths: [".cache/pip"]
+  artifacts:
+    name: 'bastet'
+    expose_as: 'Bastet Report'
+    when: always
+    paths:
+      - reports
+    reports:
+      codequality: "reports/code-climate.json"
+      junit:
+        - reports/junit-test.xml
+      coverage_report:
+        coverage_format: cobertura
+        path: reports/coverage.xml
