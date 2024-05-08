@@ -159,4 +159,5 @@ html = {show_contexts=true}
 branch=true
 relative_files=true
 source=["src"]
+omit=["tests/*"]
 dynamic_context = "test_function"

@@ -56,10 +56,7 @@ class PyTest(Tool):
             f"--junit-xml={(self._paths.report_path / 'junit-test.xml')!s}",
             f"--cov-report=html:{self._paths.report_path!s}",
             f"--cov-report=xml:{(self._paths.report_path / 'coverage.xml')!s}",
-            *(
-                f"--cov={module.relative_to(self._paths.root_path)!s}"
-                for module in self._paths.python_module_path
-            ),
+            *(f"--cov={module!s}" for module in self._paths.python_module_path),
         ]
 
     def get_environment(self) -> dict[str, str]:
