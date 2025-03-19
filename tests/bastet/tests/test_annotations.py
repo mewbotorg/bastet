@@ -11,6 +11,7 @@ from __future__ import annotations as _future_annotations
 import pathlib
 
 import pytest
+
 from bastet.tools import Annotation, Status
 
 from .util import ParameterSet

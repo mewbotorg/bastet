@@ -12,10 +12,10 @@ from .runner import BastetRunner, ReportHandler
 from .tools import Tool, ToolDomain, get_available_tools
 
 __all__ = [
-    "tools",
     "BastetRunner",
+    "ReportHandler",
     "Tool",
     "ToolDomain",
-    "ReportHandler",
     "get_available_tools",
+    "tools",
 ]
