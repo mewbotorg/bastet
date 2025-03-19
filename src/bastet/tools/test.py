@@ -56,7 +56,7 @@ class PyTest(Tool):
             f"--junit-xml={(self._paths.report_path / 'junit-test.xml')!s}",
             f"--cov-report=html:{self._paths.report_path!s}",
             f"--cov-report=xml:{(self._paths.report_path / 'coverage.xml')!s}",
-            *(f"--cov={module!s}" for module in self._paths.python_module_path),
+            "--cov=.",
         ]
 
     def get_environment(self) -> dict[str, str]:
@@ -129,11 +129,11 @@ def _get_testcase_source(test_class: str, test_name: str) -> tuple[str, int, int
     try:
         # Assume we're looking at a function in a module.
         module = importlib.import_module(test_class)
-    except ImportError:
+    except (ImportError, ValueError):
         try:
             mod, _, test_class = test_class.rpartition(".")
             module = importlib.import_module(mod)
-        except ImportError:
+        except (ImportError, ValueError):
             return None
 
         if test_class not in module.__dict__:

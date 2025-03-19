@@ -32,7 +32,7 @@ reporters: dict[str, type[Reporter]] = {
 
 
 __all__ = [
-    "reporters",
     "ReportHandler",
     "Reporter",
+    "reporters",
 ]

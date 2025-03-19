@@ -64,7 +64,7 @@ class BastetConfiguration:  # pylint: disable=too-few-public-methods
 
         # Find the "root" of the repo (where the pyproject.toml should be).
         if args.root:
-            root_dir = Path().resolve()
+            root_dir = Path.cwd()
         else:
             logger.debug("Auto detecting repo root")
             root_dir = _find_pyproject(logger) or Path.cwd()

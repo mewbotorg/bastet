@@ -174,4 +174,4 @@ def gather_tools(domain: ToolDomain, config: BastetConfiguration) -> list[Tool]:
     ]
 
 
-__all__ = ["ReportHandler", "BastetRunner"]
+__all__ = ["BastetRunner", "ReportHandler"]

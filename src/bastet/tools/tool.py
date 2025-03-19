@@ -376,7 +376,7 @@ class Annotation:
     description: str | None
     diff: list[str] | None
 
-    def __init__(  # pylint: disable=R0913 # noqa: PLR0913 - 6 args is "ok" here.
+    def __init__(  # pylint: disable=R0917,R0913
         self,
         status: Status,
         source: tuple[pathlib.Path | str, int | None, int | None] | pathlib.Path | str | None,

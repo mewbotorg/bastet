@@ -222,10 +222,19 @@ class ToolReport:
         self,
         source: AsyncIterable[Annotation | ToolError],
     ) -> AsyncIterable[Annotation | ToolError]:
-        async for item in source:
-            if isinstance(item, Annotation):
-                item.tool = self._tool
-            yield item
+        try:
+            async for item in source:
+                if isinstance(item, Annotation):
+                    item.tool = self._tool
+                yield item
+
+        # Horrible catch-all exception that converts them to ToolErrors
+        # and adds them to the list of annotations.
+        except Exception as exp:  # pylint: disable=W0718 # noqa: BLE001
+            try:
+                raise ToolError from exp  # noqa: TRY301
+            except ToolError as err:
+                yield err
 
     async def __aexit__(
         self,
@@ -410,8 +419,8 @@ class ReportInstance(abc.ABC):
 
 __all__ = [
     "ReportHandler",
+    "ReportInstance",
+    "ReportStreams",
     "Reporter",
     "ToolReport",
-    "ReportStreams",
-    "ReportInstance",
 ]

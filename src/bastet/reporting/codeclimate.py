@@ -41,9 +41,12 @@ class CodeClimate(Reporter):
         Each issue which is a Warning of higher is included in the report.
         """
 
+        self._summarise(results)
+
+    def _summarise(self, results: ToolResults) -> None:
         report = pathlib.Path("reports/code-climate.json")
 
-        with report.open("w", encoding="utf-8") as outfile:  # noqa: ASYNC101
+        with report.open("w", encoding="utf-8") as outfile:
             json.dump(
                 list(
                     map(
