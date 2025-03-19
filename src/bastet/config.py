@@ -27,6 +27,7 @@ from .reporting import Reporter, reporters
 from .tools.tool import PathRepo, ToolDomain
 
 PYPROJECT_NAME = "pyproject.toml"
+PYVENV_NAME = "pyvenv.cfg"
 GITIGNORE_NAME = ".gitignore"
 
 GitIgnore = Callable[[Path], bool]
@@ -178,6 +179,7 @@ class PathGatherer:  # pylint: disable=too-few-public-methods,too-many-instance-
     root: Path
     logger: logging.Logger
 
+    _initial_py_path: set[Path]
     _potential_py_path: set[Path]
     _python_path: set[Path]
     _python_module_path: set[Path]
@@ -193,6 +195,7 @@ class PathGatherer:  # pylint: disable=too-few-public-methods,too-many-instance-
         self.logger = logger
 
         self._initial_folders = folders
+        self._initial_py_path = set()
         self._potential_py_path = set()
         self._python_path = set()
         self._python_module_path = set()
@@ -217,7 +220,8 @@ class PathGatherer:  # pylint: disable=too-few-public-methods,too-many-instance-
         match them.
         """
 
-        self._potential_py_path = self._initial_path()
+        self._initial_py_path = self._initial_path()
+        self._potential_py_path = self._initial_py_path
         self._python_path = set()
         self._python_module_path = set()
 
@@ -259,7 +263,7 @@ class PathGatherer:  # pylint: disable=too-few-public-methods,too-many-instance-
         for potential in sys.path:
             path = Path(potential).absolute()
             if self.root in path.parents:
-                self.logger.debug("Potential PYTHON_PATH: %s", path)
+                self.logger.debug("Potential PYTHON_PATH from sys.path: %s", path)
                 paths.add(path)
 
         if self.root not in paths:
@@ -269,28 +273,44 @@ class PathGatherer:  # pylint: disable=too-few-public-methods,too-many-instance-
         return paths
 
     def _scan_dir(self, path: Path, ignores: list[GitIgnore], selector: set[str]) -> None:
+        # Exclude any folder that has the Python virtual environment marker file.
+        potential_pyenv_marker = path / PYVENV_NAME
+        if potential_pyenv_marker.is_file():
+            self.logger.debug("Ignoring python venv %s", path)
+            self._exclusion.add(path)
+            return
+
+        # Add any `.gitignore` from the folder into the ignore context for this tree.
         potential_gitignore = path / GITIGNORE_NAME
         if potential_gitignore.is_file():
             self.logger.debug("Adding %s to gitignore list", potential_gitignore)
             ignores = ignores.copy()
             ignores.append(gitignore_parser.parse_gitignore(potential_gitignore, path))
 
+        # Check to see if this directory matches known folder names of PYTHONROOT entries.
         if path.name in selector and path not in self._potential_py_path:
             self.logger.debug("Potential PYTHON_PATH: %s", path)
             self._potential_py_path.add(path)
 
+        # Process the files in the directory
         for file in path.iterdir():
-            if any(ignore(file) for ignore in ignores):
-                if file.is_dir():
-                    self._exclusion.add(file)
-                continue
+            self._scan_file(file, ignores, selector)
 
+    def _scan_file(self, file: Path, ignores: list[GitIgnore], selector: set[str]) -> None:
+        # Skip any files in VCS ignore.
+        if any(ignore(file) for ignore in ignores):
+            # Only directories are added to the excluded folders.
             if file.is_dir():
-                self._scan_dir(file, ignores, selector)
-                continue
+                self._exclusion.add(file)
+            return
 
-            if file.name.endswith(".py"):
-                self._process_python_file(file)
+        # Recurse into directories
+        if file.is_dir():
+            self._scan_dir(file, ignores, selector)
+            return
+
+        if file.name.endswith(".py"):
+            self._process_python_file(file)
 
     def _process_python_file(self, file: Path) -> None:
         self._python_files.add(file)
@@ -313,7 +333,7 @@ class PathGatherer:  # pylint: disable=too-few-public-methods,too-many-instance-
             self.logger.debug("Unable to locate a potential PYTHONPATH for %s", file)
             return
 
-        if py_root not in self._initial_path():
+        if py_root not in self._initial_py_path:
             self.logger.warning("Detecting %s as a path, but not in PYTHON_PATH", py_root)
 
         self.logger.debug(
