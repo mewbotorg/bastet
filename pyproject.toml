@@ -31,7 +31,7 @@ classifiers=[
 # Terminal colouring and formatting
 dependencies = [
     # Output Libraries
-    "clint >=0.5.1",
+    "colorama >=0.4.6",
     "gitignore-parser >=0.1.11",
 
     # Copyright linting toolchain
@@ -60,6 +60,7 @@ dependencies = [
 [project.optional-dependencies]
 dev = [
     "pylint-per-file-ignores",
+    "types-colorama",
     "types-defusedxml",
 ]
 

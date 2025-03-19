@@ -28,7 +28,7 @@ import sys
 import textwrap
 import traceback
 
-from clint.textui import colored  # type: ignore[import-untyped]
+import colorama
 
 from bastet.tools import Annotation, Status, Tool, ToolError, ToolResults
 
@@ -84,9 +84,11 @@ class AnnotationReporter(Reporter):
 
         sys.stdout.write("\n")
         if results.success:
-            sys.stdout.write(f"Congratulations! {colored.green('Proceed to Upload')}\n")
+            sys.stdout.write(
+                f"All checks passed! {_color('Proceed to Upload', colorama.Fore.GREEN)}\n",
+            )
         else:
-            sys.stdout.write(f"\nBad news! {colored.red('At least one failure!')}\n")
+            sys.stdout.write(f"\nBad news! {_color('At least one failure!', colorama.Fore.RED)}\n")
 
     async def close(self) -> None:
         """
@@ -109,9 +111,9 @@ class AnnotationReporter(Reporter):
         more than zero Pass annotations, that count is also shown.
         """
 
-        status = color_by_status(short_stats(status), status)
+        status_text = color_by_status(short_stats(status), status)
 
-        basic = f"[{status}] {(domain + ' :: ' + tool_name):18s} {annotation_count:3d} issues"
+        basic = f"[{status_text}] {(domain + ' :: ' + tool_name):18s} {annotation_count:3d} issues"
 
         if pass_count:
             basic += f" {pass_count:3d} passed"
@@ -221,29 +223,45 @@ def terminal_header(content: str) -> str:
     :return: int terminal width
     """
     width = shutil.get_terminal_size()[0]
-
     trailing_dash_count = min(80, width) - 6 - len(content)
-    return (
-        "\n"
-        + str(colored.white(f"{'=' * 4} {content} {'=' * trailing_dash_count}", bold=True))
-        + "\n"
+
+    colored_text = _color(
+        f"{'=' * 4} {content} {'=' * trailing_dash_count}",
+        colorama.Fore.WHITE,
+        bold=True,
     )
 
+    return f"\n{colored_text}\n"
 
-def color_by_status(content: str, status: Status) -> colored.ColoredString:
+
+def color_by_status(content: str, status: Status) -> str:
     """
     Terminal colours representing different status.
     """
 
     mapping = {
-        Status.EXCEPTION: "RED",
-        Status.ISSUE: "RED",
-        Status.WARNING: "YELLOW",
-        Status.FIXED: "YELLOW",
-        Status.PASSED: "GREEN",
+        Status.EXCEPTION: colorama.Fore.RED,
+        Status.ISSUE: colorama.Fore.RED,
+        Status.WARNING: colorama.Fore.YELLOW,
+        Status.FIXED: colorama.Fore.YELLOW,
+        Status.PASSED: colorama.Fore.GREEN,
     }
 
-    return colored.ColoredString(mapping.get(status, "RESET"), content)
+    return _color(content, mapping.get(status, colorama.Fore.RESET))
+
+
+def _color(data: str, color: str, *, bold: bool = False) -> str:
+    """
+    Create an ANSI-formatted coloured string.
+    """
+
+    if color == colorama.Fore.RESET:
+        return data
+
+    if bold:
+        return color + colorama.Style.BRIGHT + data + colorama.Style.RESET_ALL
+
+    return color + data + colorama.Fore.RESET
 
 
 def short_stats(status: Status) -> str:
