@@ -91,7 +91,7 @@ class TestAnnotations:
         expected: tuple[pathlib.Path, int, int],
     ) -> None:
         """Test cases for the `Annotation._normalise_source` method."""
-        normalised_source = Annotation._normalise_source(source)
+        normalised_source = Annotation._normalise_source(source)  # pylint: disable=protected-access
         assert normalised_source == expected
 
     @pytest.mark.parametrize(("source", "expected"), DATASET_TEST_FILENAME)

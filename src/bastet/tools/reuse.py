@@ -56,9 +56,9 @@ class Reuse(Tool):
             "annotate",
             "--merge-copyrights",
             "--copyright" if _copyright else "",
-            _copyright if _copyright else "",
+            _copyright or "",
             "--license" if _license else "",
-            _license if _license else "",
+            _license or "",
             "--skip-unrecognised",
             "--skip-existing",
             "--recursive",
@@ -159,7 +159,7 @@ class Reuse(Tool):
 
         for note in itertools.chain(
             self._license_issues(issues),
-            self._requested_license_issues(issues, passed),
+            self._requested_license_issues(issues),
             self._spdx_issues(issues, passed),
         ):
             yield note
@@ -168,34 +168,27 @@ class Reuse(Tool):
             yield Annotation(Status.PASSED, path, "spdx-compliant", "File passed SPDX spec")
 
     @staticmethod
-    def _requested_license_issues(
-        issues: dict[str, dict[str, list[str]]],
-        passed: set[pathlib.Path],
-    ) -> Iterator[Annotation]:
+    def _requested_license_issues(issues: dict[str, dict[str, list[str]]]) -> Iterator[Annotation]:
         """
         Annotations related to extra/missing licenses in the LICENSES folder.
         """
 
-        for name, files in issues["bad_licenses"].items():
+        for name in issues["bad_licenses"]:
             yield Annotation(
                 Status.ISSUE,
                 None,
                 "bad-license",
                 f"Bad license {name}",
-                f"Referenced in {' '.join(files)}",
             )
-            passed.difference_update({pathlib.Path(file) for file in files})
 
-        for name, files in issues["missing_licenses"].items():
+        for name in issues["missing_licenses"]:
             file = _LICENSE_DIR / f"{name}.txt"
             yield Annotation(
                 Status.ISSUE,
                 file,
                 "missing-license",
                 f"Missing license {name}",
-                f"Referenced in {' '.join(files)}",
             )
-            passed.difference_update({pathlib.Path(file) for file in files})
 
     @staticmethod
     def _license_issues(

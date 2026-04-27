@@ -60,7 +60,7 @@ def main() -> None:
     reporter = ReportHandler(logger, *[reporter() for reporter in options.reporters])
 
     # Build and run the async runner.
-    runner = BastetRunner(options, reporter)
+    runner = BastetRunner(logger, options, reporter)
     results = asyncio.run(runner.run())
     sys.exit(0 if results.success else 1)
 

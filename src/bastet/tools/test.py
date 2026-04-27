@@ -93,7 +93,10 @@ class PyTest(Tool):
         for annotation in self._process_junit(tree.getroot()):
             yield annotation
 
-    def _process_junit(self, node: Element) -> Iterable[Annotation]:
+    def _process_junit(self, node: Element | None) -> Iterable[Annotation]:
+        if node is None:
+            return
+
         for testsuite in node.findall("testsuite"):
             yield from self._process_junit(testsuite)
 

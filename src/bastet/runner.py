@@ -14,7 +14,9 @@ handler.
 from __future__ import annotations as _future_annotations
 
 import asyncio
+import logging
 import os
+import shlex
 import subprocess  # nosec
 
 from .config import BastetConfiguration
@@ -39,11 +41,17 @@ class BastetRunner:  # pylint: disable=too-few-public-methods
     handler.
     """
 
+    _logger: logging.Logger
     reporter: ReportHandler
     config: BastetConfiguration
     timeout: int = 30
 
-    def __init__(self, config: BastetConfiguration, reporter: ReportHandler) -> None:
+    def __init__(
+        self,
+        logger: logging.Logger,
+        config: BastetConfiguration,
+        reporter: ReportHandler,
+    ) -> None:
         """
         Runs the Bastet toolchain based on the configuration.
 
@@ -53,6 +61,7 @@ class BastetRunner:  # pylint: disable=too-few-public-methods
             The selected reporting systems.
         """
 
+        self._logger = logger
         self.reporter = reporter
         self.config = config
 
@@ -102,10 +111,13 @@ class BastetRunner:  # pylint: disable=too-few-public-methods
         # fetching the command.
         reporter = await self.reporter.report(tool)
 
+        self._logger.info("Running command for tool %s", tool.name)
         command = tool.get_command()
+        self._logger.info("CMD: %s", shlex.join(map(str, command)))
 
         env = os.environ.copy()
         env.update(tool.get_environment())
+        self._logger.info("ENV: %s", tool.get_environment())
 
         process = await asyncio.create_subprocess_exec(
             *command,

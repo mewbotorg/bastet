@@ -237,7 +237,7 @@ class PathGatherer:  # pylint: disable=too-few-public-methods,too-many-instance-
             self.logger.debug("Adding %s to gitignore list", local_ignores)
             _ignores.append(gitignore_parser.parse_gitignore(local_ignores, self.root))
 
-        locations_to_scan = self._initial_folders if self._initial_folders else [self.root]
+        locations_to_scan = self._initial_folders or [self.root]
         for location in locations_to_scan:
             if not location.exists():
                 self.logger.warning("%s does not exist, can not scan", location)

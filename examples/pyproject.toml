@@ -16,9 +16,7 @@ ignore = [
     "D212",  # Multi-line docstring summary should start at the second line.
     "D401",  # Docs strings do not have to be in the imperative mood.
 
-    "ANN101", "ANN102", # Don't require type annotations for 'self' and 'cls'
-
-    "TCH001", "TCH002", "TCH003",  # Don't use if TYPE_CHECKING: blocks.
+    "TC001", "TC002", "TC003",  # Don't use if TYPE_CHECKING: blocks.
 
     "EM101",  # Exceptions can use string literals
 ]
