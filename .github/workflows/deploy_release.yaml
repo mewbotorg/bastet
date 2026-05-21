@@ -14,7 +14,7 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  DEFAULT_PYTHON: "3.11"
+  DEFAULT_PYTHON: "3.14"
 
 jobs:
   publish:
@@ -25,10 +25,10 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup Python ${{ env.DEFAULT_PYTHON }}
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: ${{ env.DEFAULT_PYTHON }}
           cache: pip
@@ -43,7 +43,7 @@ jobs:
           python -m build --sdist --wheel --outdir dist/
 
       - name: Archive installation artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: builds
           path: dist

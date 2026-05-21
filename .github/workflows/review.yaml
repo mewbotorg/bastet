@@ -18,7 +18,7 @@ concurrency:
 env:
   # Which version of the reports Sonar receives.
   DEFAULT_OS: ubuntu
-  DEFAULT_PYTHON: "3.11"
+  DEFAULT_PYTHON: "3.14"
 
 jobs:
   test:
@@ -29,14 +29,14 @@ jobs:
       fail-fast: false
       matrix:
         os: ["ubuntu"]
-        version: ["3.11", "3.12"]
+        version: ["3.11", "3.12", "3.13", "3.14"]
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup Python ${{ matrix.version }}
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.version }}
           cache: pip
@@ -52,7 +52,7 @@ jobs:
         run: bastet --skip format --reporter github sonar
 
       - name: Upload Artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: review-${{ matrix.os }}-${{ matrix.version }}
@@ -79,19 +79,19 @@ jobs:
       - test
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
       - name: Download Artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         if: always()
         with:
           name: review-${{ env.DEFAULT_OS }}-${{ env.DEFAULT_PYTHON }}
           path: reports
 
       - name: SonarCloud Scan
-        uses: SonarSource/sonarcloud-github-action@master
+        uses: SonarSource/sonarqube-scan-action@v5
         if: always()
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
